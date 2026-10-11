@@ -168,6 +168,7 @@ function App() {
   // all settings"), so the switch doesn't load that workflow's saved stack over them.
   const explicitLorasFor = useRef("");
   const comfyStatusRequestRef = useRef<Promise<void> | null>(null);
+  const backendAvailabilityRef = useRef("");
   const [comfyRetrying, setComfyRetrying] = useState(false);
   const touchGestureRef = useRef<TouchGesture | null>(null);
   // The gallery search: words and the Favourites filter. Lives in memory only, never saved.
@@ -838,6 +839,11 @@ function App() {
     setComfyStatus((current) => (current.checked ? current : { ...current, checking: true }));
     const request = apiJson<ComfyStatus>("/api/comfy/status")
       .then((data) => {
+        const availability = JSON.stringify(data.backends || {});
+        if (availability !== backendAvailabilityRef.current) {
+          backendAvailabilityRef.current = availability;
+          refreshModels();
+        }
         // Not at the saved address, but on ComfyUI Desktop's port (or the other way round): now saved.
         if (data.found) {
           showToast(`Found ComfyUI at ${data.found.replace(/^https?:\/\//, "")}`, "success");

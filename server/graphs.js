@@ -99,6 +99,12 @@ function setMappedInput(graph, mapping, value) {
 async function applyMappedInputs(graph, workflow, body) {
   const controls = workflow.controls || {};
   const defaults = workflow.defaults || {};
+  if (workflow.family === "minimax-h3") {
+    const lengths = [124, 192, 243, 362];
+    const requested = Number(body.frames || defaults.frames || 124);
+    body.frames = lengths.reduce((best, value) => Math.abs(value - requested) < Math.abs(best - requested) ? value : best);
+    body.fps = 24;
+  }
   const values = {
     prompt: composeWorkflowPrompt(workflow, body.prompt),
     negative: body.negative || "",
@@ -129,6 +135,11 @@ async function applyMappedInputs(graph, workflow, body) {
       setMappedInput(graph, mediaInput.control, reference.comfyName);
       mappedReference = true;
     }
+  }
+  if (workflow.family === "minimax-h3" && !mappedReference && !body.startImage && !body.startImageId) {
+    if (workflow.capabilities?.startImageRequired) throw new Error("This H3 reference preset requires an image.");
+    delete graph["4"].inputs.first_frame;
+    delete graph["33"];
   }
   if (!mappedReference && (body.startImage || body.startImageId) && controls.startImage) {
     const imageName = await uploadBodyStartImage(body);

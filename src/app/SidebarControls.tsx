@@ -13,6 +13,12 @@ import { SafeImg } from './SafeImg';
 import { referenceName } from './ReferenceMediaPicker';
 import { PhoneSelect, PhoneSlider } from './phoneControls';
 
+const h3Durations = [{ label: "5 Seconds", value: "124" }, { label: "8 Seconds", value: "192" }, { label: "10 Seconds", value: "243" }, { label: "15 Seconds", value: "362" }];
+
+function H3Duration({ frames, setFrames }: { frames: number; setFrames: (value: number) => void }) {
+  return <Field label="Duration"><Select value={String(frames)} options={h3Durations} onChange={(value: string) => setFrames(Number(value))} /><small>24 FPS; native frame lengths</small></Field>;
+}
+
 function WorkflowPreviewCard({ workflow, onOpen }: { workflow: WorkflowSummary | null; onOpen: () => void }) {
   const comfyRestarting = useComfyRestarting();
   if (!workflow) return (
@@ -146,8 +152,10 @@ export function PhoneAdvancedControls({ view }: { view: any }) {
       {mode === "video" ? (
         <>
           <h3 className="phone-section">Video</h3>
+          {currentProfile?.family === "minimax-h3" ? <H3Duration frames={frames} setFrames={setFrames} /> : <>
           <PhoneSlider label="Frames" value={frames} min={frameMeta.min || 1} max={Math.min(frameMeta.max ?? 240, 240)} step={frameMeta.step || 4} onChange={setFrames} />
           <PhoneSlider label="Frames per second" value={fps} min={fpsMeta.min || 1} max={Math.min(fpsMeta.max ?? 60, 60)} step={fpsMeta.step || 1} onChange={setFps} />
+          </>}
         </>
       ) : null}
 
@@ -255,8 +263,10 @@ export function SidebarControls({ view }: { view: any }) {
             ) : null}
             {mode === "video" ? (
               <div className="number-row">
+                {currentProfile?.family === "minimax-h3" ? <H3Duration frames={frames} setFrames={setFrames} /> : <>
                 <NumberPicker label="Frames" value={frames} onChange={setFrames} min={frameMeta.min || 1} max={frameMeta.max ?? 240} step={frameMeta.step || 4} fill />
                 <NumberPicker label="FPS" value={fps} onChange={setFps} min={fpsMeta.min || 1} max={fpsMeta.max ?? 60} step={fpsMeta.step || 1} fill />
+                </>}
               </div>
             ) : null}
             <div className="number-row">

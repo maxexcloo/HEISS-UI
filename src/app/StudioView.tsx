@@ -651,6 +651,8 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               <span>{canUseNegativePrompt ? characterMeta(negative, negativeLimit) : "Unavailable for this model"}</span>
             </div>
             <StableComposerBar
+              hasText={Boolean(prompt || negative)}
+              onClearText={() => { setPrompt(""); setNegative(""); setShowNegativePrompt(false); }}
               models={models}
               model={model}
               modelProfiles={modelProfiles}
@@ -765,6 +767,8 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               <span>{canUseNegativePrompt ? characterMeta(negative, negativeLimit) : "Unavailable for this model"}</span>
             </div>
             <StableComposerBar
+              hasText={Boolean(prompt || negative)}
+              onClearText={() => { setPrompt(""); setNegative(""); setShowNegativePrompt(false); }}
               models={models}
               model={model}
               modelProfiles={modelProfiles}
@@ -977,7 +981,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
                     <ViewerUpscaleButton item={active} busy={Boolean(upscaleBusyIds?.has(active.id))} onCancel={cancelUpscale} onActivate={activateUpscale} />
                     </span>
                   ) : null}
-                  {active.upscale?.url && !upscaledWithRun(active) ? (
+                  {active.type === "image" && active.upscale?.url && !upscaledWithRun(active) ? (
                     <Tip content={compareOpen ? "Hide the comparison" : "Compare with the original"}>
                       <button
                         className={cn("icon-button", compareOpen && "active")}

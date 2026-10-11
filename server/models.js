@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { dataDir } from './gallery-store.js';
 import { missingNodes, nodeRange, optionsFor, textRange } from './comfy.js';
 import { loadCustomWorkflows, workflowOptionIssues } from './custom-workflows.js';
 import { modelTypeChoices } from './model-families.js';
@@ -8,7 +11,25 @@ export function modelBasename(name = "") {
   return String(name).split(/[\\/]/).pop() || name;
 }
 
+const modelLabels = {
+  "flux-2-klein-9b-fp8.safetensors": "FLUX.2 Klein 9B Fast (FP8)",
+  "flux-2-klein-base-9b-fp8.safetensors": "FLUX.2 Klein 9B Base (FP8)",
+  "ideogram4_fp8_scaled.safetensors": "Ideogram 4 (FP8)",
+  "krea2_turbo_fp8_scaled.safetensors": "Krea 2 Turbo (FP8)",
+  "kroma-v0.3.1-turbo-opd-W8A8.safetensors": "Kroma 0.3.1 Turbo (W8A8)",
+  "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors": "Kroma 0.3.1 Turbo (INT8 ConvRot)",
+  "kroma-v0.3.1-turbo-opd.safetensors": "Kroma 0.3.1 Turbo (Original BF16)",
+  "minimax_h3_fl2va_pruned_fp8_scaled.safetensors": "MiniMax H3 Video (FP8)",
+  "minimax_h3_fl2va_pruned_int8_convrot.safetensors": "MiniMax H3 Video (INT8)",
+  "minimax_h3_ref2va_pruned_int8_convrot.safetensors": "MiniMax H3 Reference Video (INT8)",
+  "qwen_image_2.1_bf16.safetensors": "Qwen Image 2.1 (BF16)",
+  "qwen_image_2.1_int8_convrot.safetensors": "Qwen Image 2.1 (INT8)",
+  "qwen_image_2.1_turbo_bf16.safetensors": "Qwen Image 2.1 Turbo (BF16)"
+};
+
 export function prettyModelName(name = "") {
+  const label = modelLabels[modelBasename(name)];
+  if (label) return label;
   const base = modelBasename(name).replace(/\.(safetensors|ckpt|pt|bin|gguf)$/i, "");
   return base
     .replace(/distill/ig, "")
@@ -168,6 +189,10 @@ export function inferModels(info, stats = {}) {
     if (Number(defaults.count)) countRange.default = Number(defaults.count);
     if (Number(defaults.frames)) frameRange.default = Number(defaults.frames);
     if (Number(defaults.fps)) fpsRange.default = Number(defaults.fps);
+    if (workflow.family === "minimax-h3") {
+      Object.assign(frameRange, { default: 124, min: 124, max: 362, step: 17, offset: 5 });
+      Object.assign(fpsRange, { default: 24, min: 24, max: 24, step: 1 });
+    }
     profiles.push(buildProfile({
       id: workflow.profileId,
       kind: workflow.kind,
@@ -195,12 +220,26 @@ export function inferModels(info, stats = {}) {
       },
       aspects: customAspectSet({ width: detectedDefault(widthRange, Number(defaults.width || 1024)), height: detectedDefault(heightRange, Number(defaults.height || 1024)) }, workflow.aspectRatios, { width: widthRange, height: heightRange }),
       options: { textEncoders: clips, vaes, clipTypes, weightDtypes, samplers, schedulers },
-      constraints: { prompt: textMeta, negative: textMeta, width: widthRange, height: heightRange, count: countRange, frames: frameRange, fps: fpsRange, ...samplerRange },
+      constraints: { prompt: textMeta, negative: textMeta, width: widthRange, height: heightRange, count: countRange, frames: frameRange, fps: fpsRange, ...samplerRange, ...(workflow.family === "minimax-h3" ? { steps: { default: Number(defaults.steps), min: Number(defaults.steps), max: Number(defaults.steps), step: 1 } } : {}) },
       capabilities: workflow.capabilities,
       mediaInputs: workflow.mediaInputs || [],
       aspectPolicy: workflow.aspectPolicy,
       maxLoras: workflow.loraStack?.max
     }));
+  }
+
+  // Saved display metadata preserves the native profile IDs and generation settings.
+  try {
+    const saved = JSON.parse(fs.readFileSync(path.join(dataDir, "per-model-workflows.json"), "utf8"));
+    for (const row of saved) {
+      const profile = profiles.find((item) => item.id === row.id) || (profiles.filter((item) => item.model === row.model).length === 1 ? profiles.find((item) => item.model === row.model) : null);
+      if (!profile || profile.model !== row.model || typeof row.name !== "string") continue;
+      profile.label = row.name;
+      profile.displayName = row.name;
+      if (typeof row.profile?.description === "string") profile.description = row.profile.description;
+    }
+  } catch {
+    // A fresh installation has no saved profile catalogue yet.
   }
 
   const imageProfiles = profiles.filter((profile) => profile.kind === "image");

@@ -312,7 +312,7 @@ export function PhoneViewerBar({ item, actions, showDetails, onToggleDetails, co
     <nav className="viewer-phone-bar" aria-label="Image actions">
       {done ? <button type="button" onClick={() => shareItem(item, actions.showToast)}>{canShareFiles ? <Share size={21} /> : <Download size={21} />}<span>{canShareFiles ? 'Share' : 'Save'}</span></button> : null}
       {actions.smartUpscale && canUpscaleItem(item) ? <UpscaleBarButton item={item} actions={actions} /> : null}
-      {item.upscale?.url && !upscaledWithRun(item) ? <button type="button" className={cn(compareOpen && 'is-on')} aria-pressed={compareOpen} onClick={() => { haptic('tap'); onToggleCompare(); }}><Columns2 size={21} /><span>Compare</span><HapticTarget /></button> : null}
+      {item.type === "image" && item.upscale?.url && !upscaledWithRun(item) ? <button type="button" className={cn(compareOpen && 'is-on')} aria-pressed={compareOpen} onClick={() => { haptic('tap'); onToggleCompare(); }}><Columns2 size={21} /><span>Compare</span><HapticTarget /></button> : null}
       {item.prompt ? <button type="button" onClick={() => actions.reuse(item)}><Wand2 size={21} /><span>Reuse</span></button> : null}
       {canStar(item) ? (
         <button type="button" className={cn(item.favorite && 'is-starred')} aria-pressed={Boolean(item.favorite)} onClick={() => { haptic('tap'); actions.star(item); }}>
@@ -602,13 +602,17 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
           placeholder={referenceInpaint?.mask ? 'Describe what the painted part becomes…' : hiddenSpace ? 'Describe what to make, privately…' : 'Describe what to make…'}
           onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))}
           rows={4}
-          autoFocus={!prompt.trim()}
         />
-        {recentPrompts.length ? (
-          <button type="button" className="phone-compose-recent" onClick={() => { haptic('tap'); setHistoryOpen(true); }}>
-            <History size={15} /> Recent
+        <div className="phone-compose-actions">
+          {recentPrompts.length ? (
+            <button type="button" className="phone-compose-recent" onClick={() => { haptic('tap'); setHistoryOpen(true); }}>
+              <History size={15} /> Recent
+            </button>
+          ) : null}
+          <button type="button" className="phone-compose-recent" aria-label="Clear Prompt & Negative" disabled={!prompt && !negative} onClick={() => { setPrompt(''); setNegative(''); setShowNegative(false); }}>
+            <X size={15} /> Clear Text
           </button>
-        ) : null}
+        </div>
       </div>
       <PromptHistorySheet
         open={historyOpen}

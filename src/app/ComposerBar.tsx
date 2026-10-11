@@ -266,6 +266,8 @@ export type ComposerBarProps = {
   /** Recent prompts: the clock beside Negative, shown once there is a history. */
   onToggleHistory?: () => void;
   historyOpen?: boolean;
+  hasText?: boolean;
+  onClearText?: () => void;
 };
 
 export function ComposerBar(props: ComposerBarProps) {
@@ -278,7 +280,7 @@ export function ComposerBar(props: ComposerBarProps) {
     showNegativePrompt, setShowNegativePrompt, canUseNegativePrompt,
     runningCount, generateDisabled, generateDisabledReason, generate, refreshComfyStatus, comfyRetrying,
     referenceInputs = [], referenceInpaint = null, loraMismatch = null, onDismissLoraMismatch, referenceAssets = [], onReferenceSelect, onReferenceRemove, onReferenceDeleteRequest, onReferenceError,
-    pinnedSeed = "", onRandomSeed, generationEstimate = null, generateKey = "", onToggleHistory, historyOpen = false
+    pinnedSeed = "", onRandomSeed, generationEstimate = null, generateKey = "", onToggleHistory, historyOpen = false, hasText = false, onClearText
   } = props;
 
   const showVariants = mode === "image" && currentProfile?.capabilities.variations !== false;
@@ -380,6 +382,13 @@ export function ComposerBar(props: ComposerBarProps) {
       </AnimatePresence>
       <div className="zen-prompt-actions" ref={rowRef} data-density-level={level}>
         <div className="prompt-left-actions" data-fluid-group>
+          {onClearText ? (
+            <Tip content="Clear the prompt & negative prompt">
+              <button type="button" className="negative-toggle" aria-label="Clear Prompt & Negative" disabled={!hasText} onClick={onClearText}>
+                <X size={13} /> Clear Text
+              </button>
+            </Tip>
+          ) : null}
           <Tip content={!canUseNegativePrompt ? "This model doesn’t use a negative prompt" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}>
             <button
               data-open-trigger

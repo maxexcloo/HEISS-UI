@@ -17,6 +17,7 @@ function frame(text) {
 
 export async function startFakeComfy({ objectInfo = {}, systemStats = {}, version = "0.34.1" } = {}) {
   const prompts = [];
+  const requests = [];
   const history = {};
   const sockets = new Map();
   const waiting = new Map();
@@ -38,6 +39,7 @@ export async function startFakeComfy({ objectInfo = {}, systemStats = {}, versio
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
+    requests.push({ method: req.method, pathname: url.pathname });
     // Out of reach, the way a proxy in front of a stopped ComfyUI answers.
     if (down) return json(res, 503, { error: "down" });
     if (req.method === "POST" && url.pathname === "/prompt") {
@@ -95,6 +97,7 @@ export async function startFakeComfy({ objectInfo = {}, systemStats = {}, versio
   return {
     url,
     prompts,
+    requests,
     /** Resolves with the next prompt queued (or the last one, if one already came). */
     nextPrompt: () => new Promise((resolve) => waiting.set("prompt", resolve)),
     /** Resolves once the job's progress socket is connected. */
