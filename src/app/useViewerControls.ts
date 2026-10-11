@@ -1,4 +1,5 @@
 import { fallbackAspectPresets } from './constants';
+import { outputProfile } from './generationOptions';
 import { clampText, settingMax } from './format';
 import { touchCenter, touchDistance } from './gallery';
 import { normalizeLoras } from './loras';
@@ -26,7 +27,7 @@ export function useViewerControls(view: any) {
     active, doneGallery, generate, generateDisabled, height, lastTapRef,
     models, prefs, setActive, setCfg, setClipType, setCount, setCustomSize, setDenoise, setFps,
     setFrames, setHeight, setIsDraggingViewer, setLoras, setMode, setModel, setNegative, setPrompt,
-    setSampler, setScheduler, setSeed, setShowDetails, setStartImage, setStartImageId, setStartImageName, setSteps,
+    setSampler, setScheduler, setSeed, setShowDetails, setShowNegativePrompt, setStartImage, setStartImageId, setStartImageName, setSteps,
     setTextEncoder, setTextEncoders, setVae, setViewerPan, setViewerZoom, setWeightDtype, setWidth,
     setZenSelectedId, showToast, viewerDragEndRef, viewerDragRef, viewerPan,
     viewerZoom, visibleGallery, width, zenItem, zenStripDragRef, zenStripRef
@@ -54,6 +55,7 @@ export function useViewerControls(view: any) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       setPrompt(before.prompt);
       setNegative(before.negative);
+      setShowNegativePrompt(before.showNegativePrompt);
       setSeed(before.seed);
       setWidth(before.width);
       setHeight(before.height);
@@ -73,14 +75,16 @@ export function useViewerControls(view: any) {
     const before = view.draft ? { ...view.draft } : null;
     const itemSettings = item.settings || {};
     const nextMode = item.type;
-    const matchingProfile = models?.profiles.find((profile: Profile) => profile.kind === nextMode && profile.model === item.model);
+    const matchingProfile = outputProfile(models?.profiles || [], item);
     const matchingAspects = matchingProfile?.aspectPresets?.length ? matchingProfile.aspectPresets : fallbackAspectPresets[nextMode];
     setMode(nextMode);
     if (matchingProfile) setModel(matchingProfile.id);
     const nextPromptLimit = settingMax(matchingProfile?.constraints?.prompt);
     const nextNegativeLimit = settingMax(matchingProfile?.constraints?.negative);
     setPrompt(clampText(item.prompt || "", nextPromptLimit));
-    setNegative(clampText(item.negative || "", nextNegativeLimit));
+    const nextNegative = clampText(item.negative || "", nextNegativeLimit);
+    setNegative(nextNegative);
+    setShowNegativePrompt(Boolean(nextNegative));
     setWidth(Number(item.width || itemSettings.width || width));
     setHeight(Number(item.height || itemSettings.height || height));
     if (itemSettings.steps) setSteps(Number(itemSettings.steps));
@@ -88,7 +92,7 @@ export function useViewerControls(view: any) {
     if (itemSettings.denoise) setDenoise(Number(itemSettings.denoise));
     if (itemSettings.seed && itemSettings.seed !== "Random" && !vary) setSeed(String(itemSettings.seed));
     else setSeed("");
-    if (itemSettings.count) setCount(Number(itemSettings.count));
+    if (itemSettings.variationCount || itemSettings.count) setCount(Number(itemSettings.variationCount || itemSettings.count));
     if (itemSettings.frames) setFrames(Number(itemSettings.frames));
     if (itemSettings.fps) setFps(Number(itemSettings.fps));
     if (itemSettings.sampler) setSampler(String(itemSettings.sampler));

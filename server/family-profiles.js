@@ -294,9 +294,15 @@ export function familyProfiles(info, helpers) {
       : source === "checkpoint" ? info2.bundled : { encoder: false, vae: false, known: true };
     const encoderBuiltIn = bundled.encoder && !family.neverBundledEncoder;
     const missing = [];
+    // H3's smaller encoder needs this learned projection; never substitute it alone.
+    const h3Projection = family.sampling === "h3"
+      && optionsFor(info, "CLIPLoader", "type").includes("krea2")
+      && optionsFor(info, "ClipProjApply", "projection").includes("mmh3-4b-ClipProj-v3.1.safetensors")
+      ? "mmh3-4b-ClipProj-v3.1.safetensors" : "";
+    const projectedEncoders = h3Projection ? rankEncoders(encoderFiles, { kinds: ["qwen3vl_4b"] }).filter((name) => !isGguf(name)) : [];
 
     const encoderSlots = encoderBuiltIn ? [] : family.slots.map((slot) => {
-      const options = rankEncoders(encoderFiles, slot);
+      const options = [...projectedEncoders, ...rankEncoders(encoderFiles, slot)];
       if (!options.length) {
         const key = slot.download || slot.kinds[0];
         missing.push({
@@ -305,7 +311,7 @@ export function familyProfiles(info, helpers) {
           downloads: downloadsFor(encoderDownloads[key], "text_encoders", `encoder:${key}`, device)
         });
       }
-      return { slot: slot.slot, label: slot.label, options, default: options[0] || "" };
+      return { slot: slot.slot, label: projectedEncoders.length ? "Qwen3-VL 4B / 32B" : slot.label, options, default: options[0] || "" };
     });
 
     const vaeOptions = rankVaes(vaeFiles, family.vae);
@@ -367,6 +373,9 @@ export function familyProfiles(info, helpers) {
     heightRange.default = height;
     const countRange = nodeRange(info, latentNode, "batch_size", { default: 1, min: 1, max: MAX_BATCH, step: 1 });
     countRange.max = Math.min(MAX_BATCH, Number(countRange.max) || MAX_BATCH);
+    // Built-in image workflows start with four variants when their latent node supports them.
+    countRange.default = family.kind === "image" && family.sampling !== "pair"
+      ? Math.max(countRange.min, Math.min(4, countRange.max)) : 1;
     const frameRange = family.kind === "video" ? nodeRange(info, latentNode, "length", { default: family.frames, min: 1, max: 1000, step: family.frameStep || 1 }) : {};
     if (family.kind === "video") frameRange.default = family.frames;
     if (family.sampling === "h3") frameRange.offset = 5;
@@ -445,6 +454,7 @@ export function familyProfiles(info, helpers) {
       variant: variant.id,
       variantLabel: variant.label,
       encoderSlots,
+      encoderProjections: Object.fromEntries(projectedEncoders.map((name) => [name, h3Projection])),
       vaeBuiltIn: Boolean(bundled.vae),
       encoderBuiltIn,
       bundledKnown: bundled.known !== false,

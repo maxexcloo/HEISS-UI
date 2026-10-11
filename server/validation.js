@@ -130,6 +130,7 @@ function sanitizeFamilyBody(input, info, stats) {
     // A quantized checkpoint (NF4) loads through its format's node, with the same inputs.
     checkpointLoader: profile.checkpointLoader || "",
     encoders,
+    encoderProjection: profile.encoderProjections?.[encoders[0]] || "",
     textEncoder: encoders[0] || "",
     clipType: profile.defaults.clipType || "",
     vae: resolvedVae,
@@ -151,6 +152,7 @@ function sanitizeFamilyBody(input, info, stats) {
     scheduler: String(input.scheduler || profile.defaults.scheduler || ""),
     seed: String(input.seed || ""),
     count: profile.capabilities.variations === false ? 1 : snapInteger(input.count, 1, c.count),
+    ...(input.variationCount !== undefined ? { variationCount: kind === "image" && profile.capabilities.variations !== false ? clampInteger(input.variationCount, 1, 1, 8) : 1 } : {}),
     frames: kind === "video" ? snapInteger(input.frames, c.frames?.default, c.frames) : 0,
     fps: kind === "video" ? snapInteger(input.fps, c.fps?.default, c.fps) : 0,
     startImage: profile.capabilities.startImage ? String(input.startImage || "") : "",
@@ -251,6 +253,7 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
     scheduler: String(input.scheduler || ""),
     seed: String(input.seed || ""),
     count: workflowInfo.capabilities?.variations === false ? 1 : snapInteger(input.count, countRange.default, countRange),
+    ...(input.variationCount !== undefined ? { variationCount: kind === "image" && workflowInfo.capabilities?.variations !== false ? clampInteger(input.variationCount, 1, 1, 8) : 1 } : {}),
     frames: snapInteger(input.frames, frameRange.default, frameRange),
     fps: snapInteger(input.fps, fpsRange.default, fpsRange),
     startImage: String(input.startImage || ""),

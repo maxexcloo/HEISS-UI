@@ -57,7 +57,10 @@ export async function startFakeComfy({ objectInfo = {}, systemStats = {}, versio
       json(res, 200, history[id] ? { [id]: history[id] } : {});
       return;
     }
-    if (req.method === "GET" && url.pathname === "/history") return json(res, 200, history);
+    if (req.method === "GET" && url.pathname === "/history") {
+      const limit = Number(url.searchParams.get("max_items"));
+      return json(res, 200, limit > 0 ? Object.fromEntries(Object.entries(history).slice(-limit)) : history);
+    }
     if (req.method === "POST" && url.pathname === "/history") {
       const body = await readBody(req);
       for (const id of body.delete || []) {
@@ -69,7 +72,7 @@ export async function startFakeComfy({ objectInfo = {}, systemStats = {}, versio
       return;
     }
     if (req.method === "GET" && url.pathname === "/queue") {
-      return json(res, 200, { queue_running: prompts.filter((item) => !ended.has(item.id)).map((item) => [0, item.id, {}, {}, []]), queue_pending: [] });
+      return json(res, 200, { queue_running: prompts.filter((item) => !ended.has(item.id)).map((item) => [0, item.id, item.prompt, item.extra_data || {}, []]), queue_pending: [] });
     }
     if (req.method === "GET" && url.pathname === "/object_info") return json(res, 200, objectInfo);
     if (req.method === "GET" && url.pathname === "/system_stats") {

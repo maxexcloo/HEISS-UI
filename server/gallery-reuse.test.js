@@ -12,6 +12,19 @@ const { galleryDelta, galleryRevisionValue, hideGalleryItems, makePendingItems, 
 
 const url = (filename) => `/comfy/view?${new URLSearchParams({ filename, subfolder: "", type: "output" })}`;
 
+test("separate variants keep their requested composer count without retrying the whole group", () => {
+  const body = { kind: "image", prompt: "a heron", count: 1, variationCount: 4, profileId: "custom:reference", createdAt: new Date().toISOString() };
+  const pending = makePendingItems("separate-variant", body);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].settings.count, 1);
+  assert.equal(pending[0].settings.variationCount, 4);
+  setGallery(pending);
+  const completed = replaceGalleryJob("separate-variant", [{ url: url("variant.png"), filename: "variant.png", type: "image" }], body, new Map());
+  assert.equal(completed.length, 1);
+  assert.equal(completed[0].settings.count, 1);
+  assert.equal(completed[0].settings.variationCount, 4);
+});
+
 test("a run that reuses a deleted image's file name still shows when it finishes", () => {
   // The newest image, HEISS_00042_.png, exists; a run starts; then that image is deleted.
   fs.writeFileSync(path.join(outputDir, "HEISS_00042_.png"), "old");

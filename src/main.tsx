@@ -6,6 +6,7 @@ import "./styles.css";
 import { useModelFolders } from './app/useModelFolders';
 import type { ComfyStatus, GalleryItem, Health, LoraSelection, MediaInput, Mode, Models, OutputFolderReport, Paths, Preferences, Profile, InpaintMask, ReferenceAsset, ReferenceInpaint, SelectedReferenceAsset, TouchGesture, UpdatePrefs, UpdateStatus, WorkflowPreferences, WorkflowSummary } from './app/types';
 import { fallbackAspectPresets } from './app/constants';
+import { profileImageCount, profileImageSize } from './app/generationOptions';
 import { apiJson, copyImage, copyText, loadDraft, loadPrefs, referenceAssetFromGallery } from './app/api';
 import { characterMeta, clampText, formatElapsed, generationDetailEntries, settingMax, textLength, titleFromPrompt } from './app/format';
 import { useGalleryColumnCount } from './app/gallery';
@@ -1023,14 +1024,15 @@ function App() {
     const nextReferenceInput = imageInputsForProfile(profile)[0];
     if (setModelId) setModel(profile.id);
     setCustomSize(false);
-    setCount(profile.kind === "video" || profile.capabilities?.variations === false ? 1 : Number(profile.defaults.count || prefs.defaultImageCount));
+    setCount(profileImageCount(profile, prefs.defaultImageCount));
     setTextEncoder(String(profile.defaults.textEncoder || ""));
     setTextEncoders((profile.encoderSlots || []).map((slot) => slot.default));
     setVae(String(profile.defaults.vae || ""));
     setClipType(String(profile.defaults.clipType || ""));
     setWeightDtype(String(profile.defaults.weightDtype || "default"));
-    setWidth(Number(profile.defaults.width || 1024));
-    setHeight(Number(profile.defaults.height || 1024));
+    const size = profileImageSize(profile);
+    setWidth(size.width);
+    setHeight(size.height);
     setSteps(Number(profile.defaults.steps || profile.constraints?.steps?.default || (profile.kind === "video" ? prefs.defaultVideoSteps : prefs.defaultImageSteps)));
     setCfg(Number(profile.defaults.cfg || profile.constraints?.cfg?.default || 1));
     setSampler(String(profile.defaults.sampler || "euler_ancestral"));
@@ -1098,10 +1100,10 @@ function App() {
 
   function applyAspect(value: string, targetMode = mode) {
     if (value === "default") {
-      const defaults = currentProfile?.defaults || {};
+      const size = profileImageSize(currentProfile, targetMode);
       setCustomSize(false);
-      setWidth(Number(defaults.width || (targetMode === "video" ? 512 : 1024)));
-      setHeight(Number(defaults.height || (targetMode === "video" ? 288 : 1024)));
+      setWidth(size.width);
+      setHeight(size.height);
       return;
     }
     if (value === "free" || value === "custom") {
@@ -1214,7 +1216,8 @@ function App() {
   const promptRemaining = promptLimit ? Math.max(0, promptLimit - textLength(prompt)) : undefined;
   const profileOptions = currentProfile?.options || {};
   const aspectValue = `${width}x${height}`;
-  const defaultAspectSize = `${Number(currentProfile?.defaults.width || (mode === "video" ? 512 : 1024))}x${Number(currentProfile?.defaults.height || (mode === "video" ? 288 : 1024))}`;
+  const defaultSize = profileImageSize(currentProfile, mode);
+  const defaultAspectSize = `${defaultSize.width}x${defaultSize.height}`;
   const aspectPickerValue = aspectValue === defaultAspectSize ? "default" : customSize || !aspectOptions.some((item) => item.value === aspectValue) ? "free" : aspectValue;
   const galleryColumnCount = useGalleryColumnCount();
   // Upscales count too, so Stop shows (and stops them) while only an upscale is running.
@@ -1440,7 +1443,7 @@ function App() {
   const { generate, cancelJob, cancelQueue, clearGallery, clearFailedItems, resetAllSettings, clearAllCache, openOutputFolder, deleteItem, deleteItems } = generationActions;
 
   const viewerActions = useViewerControls({
-    draft: { prompt, negative, seed, mode, model, width, height, steps, cfg, count, loras }, active, deleteItem, doneGallery: zenGallery, generate, generateDisabled, height, lastTapRef, lastTouchRef, mode, models, prefs, setActive, setCfg, setClipType, setCount, setCustomSize, setDenoise, setFps, setFrames, setHeight, setIsDraggingViewer, setLoras: setLorasWithMemory, setMode, setModel, setNegative, setPrompt, setSampler, setScheduler, setSeed, setShowDetails, setStartImage, setStartImageId, setStartImageName, setSteps, setTextEncoder, setTextEncoders, setVae, setViewerPan, setViewerZoom, setWeightDtype, setWidth, setZenSelectedId, showToast, touchGestureRef, viewerDragEndRef, viewerDragRef, viewerPan, viewerZoom, visibleGallery, width, zenItem, zenStripDragRef, zenStripRef, viewerGallery
+    draft: { prompt, negative, seed, mode, model, width, height, steps, cfg, count, loras, showNegativePrompt }, active, deleteItem, doneGallery: zenGallery, generate, generateDisabled, height, lastTapRef, lastTouchRef, mode, models, prefs, setActive, setCfg, setClipType, setCount, setCustomSize, setDenoise, setFps, setFrames, setHeight, setIsDraggingViewer, setLoras: setLorasWithMemory, setMode, setModel, setNegative, setPrompt, setSampler, setScheduler, setSeed, setShowDetails, setShowNegativePrompt, setStartImage, setStartImageId, setStartImageName, setSteps, setTextEncoder, setTextEncoders, setVae, setViewerPan, setViewerZoom, setWeightDtype, setWidth, setZenSelectedId, showToast, touchGestureRef, viewerDragEndRef, viewerDragRef, viewerPan, viewerZoom, visibleGallery, width, zenItem, zenStripDragRef, zenStripRef, viewerGallery
   });
   const { resetViewer, openItem, applyAllSettings, applyLoras, moveZen, moveViewer, goLatestZen, submitZenPrompt, startZenStripDrag, dragZenStrip, stopZenStripDrag, selectZenItem, zoomViewer, wheelViewer, clickViewer, startViewerDrag, dragViewer, stopViewerDrag, startViewerTouch, moveViewerTouch, endViewerTouch } = viewerActions;
 

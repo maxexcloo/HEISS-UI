@@ -5,6 +5,7 @@ import "./crash-log-install.js";
 import { addProbe, logDir } from "./crash-log.js";
 import express from "express";
 import { configuredBackends, currentComfyBackend, isH3Profile, mergeBackendModels, withComfyBackend } from "./comfy-backends.js";
+import { readModelActivity } from "./model-activity.js";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -704,10 +705,14 @@ app.get("/api/comfy/status", async function comfyStatus(req, res) {
   if (configuredBackends().length > 1) {
     const started = performance.now();
     const names = configuredBackends();
-    const results = await Promise.allSettled(names.map((backend) => withComfyBackend(backend, () => comfy("/system_stats", { timeout: 1500 }))));
+    const results = await Promise.allSettled(names.map((backend) => withComfyBackend(backend, async () => {
+      const [stats, modelActivity] = await Promise.all([comfy("/system_stats", { timeout: 1500 }), readModelActivity(comfy)]);
+      return { stats, modelActivity };
+    })));
     const backends = Object.fromEntries(results.map((result, index) => [names[index], {
       connected: result.status === "fulfilled",
-      device: result.status === "fulfilled" ? result.value?.devices?.[0]?.name || "" : ""
+      device: result.status === "fulfilled" ? result.value.stats?.devices?.[0]?.name || "" : "",
+      modelActivity: result.status === "fulfilled" ? result.value.modelActivity : null
     }]));
     return res.json({
       connected: Object.values(backends).some((backend) => backend.connected),
@@ -730,6 +735,7 @@ app.get("/api/comfy/status", async function comfyStatus(req, res) {
     }
     const stats = await response.json();
     const device = stats?.devices?.[0]?.name || "";
+    const modelActivity = await readModelActivity(comfy);
     res.json({
       ...restartFields(),
       connected: true,
@@ -737,6 +743,7 @@ app.get("/api/comfy/status", async function comfyStatus(req, res) {
       latencyMs,
       version: stats?.system?.comfyui_version || "",
       device,
+      modelActivity,
       ...(res.locals.foundComfy ? { found: res.locals.foundComfy } : {})
     });
   } catch (error) {
@@ -1648,6 +1655,7 @@ async function generateOnBackend(req, res) {
       steps: Number(req.body?.steps || 4),
       cfg: Number(req.body?.cfg || 1),
       count: Number(req.body?.count || 1),
+      ...(req.body?.variationCount !== undefined ? { variationCount: Math.max(1, Math.min(8, Math.round(Number(req.body.variationCount) || 1))) } : {}),
       sampler: String(req.body?.sampler || "euler"),
       scheduler: String(req.body?.scheduler || "simple"),
       seed: String(req.body?.seed || ""),
