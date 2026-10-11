@@ -23,6 +23,7 @@ import { PhoneSearchBar } from './GallerySearch';
 import { StackRunsButton } from './StackRunsButton';
 import { canStar, emptySearch, searchActive, type GallerySearch } from './favorites';
 import { usePromptHistory } from './recentPrompts';
+import { ModelActivity } from './ModelActivity';
 
 /* ---------------------------------------------------------------------------
    The phone studio
@@ -456,6 +457,7 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
       ) : null}
 
       <main ref={galleryStageRef} className="phone-gallery" onScroll={onGalleryScroll}>
+        {!hiddenLocked && !selecting ? <ModelActivity status={comfyStatus} /> : null}
         {galleryBody}
       </main>
 
@@ -591,6 +593,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         </>
       }
     >
+      <ModelActivity status={comfyStatus} />
       <div className="phone-control">
         <span className="phone-control-label">Generation Mode</span>
         <div className="phone-seg phone-mode" role="radiogroup" aria-label="Generation Mode">

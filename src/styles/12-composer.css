@@ -8,6 +8,19 @@
 
 .zen-prompt-actions { position: relative; }
 
+.model-activity {
+  min-width: 0;
+  padding: 4px 10px;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  line-height: 1.5;
+}
+.model-activity-row { display: flex; gap: 6px; min-width: 0; }
+.model-activity-row > span:first-child { flex-shrink: 0; }
+.model-activity-names { min-width: 0; overflow-wrap: anywhere; }
+.phone-gallery > .model-activity { padding: 4px 8px 10px; font-size: 12px; }
+.phone-create .model-activity { padding: 0 0 12px; font-size: 12px; }
+
 /* The row never wraps any more: the ladder is what makes it fit. */
 .zen-inline-settings { flex-wrap: nowrap; }
 
