@@ -243,3 +243,15 @@ test("custom batch counts reach the UI and configured ready profiles become inst
     fs.rmSync(file);
   }
 });
+
+test("single-image reference jobs preserve and validate the requested variant count", () => {
+  const info = objectInfo({ checkpoints: ["sdxl_turbo_1.0.safetensors"] });
+  const profile = inferModels(info).profiles.find((item) => item.model === "sdxl_turbo_1.0.safetensors");
+  const request = { kind: "image", workflow: profile.workflow, profileId: profile.id, model: profile.model, prompt: "a heron", count: 1, variationCount: 4 };
+  const checked = sanitizeGenerateBody(request, info);
+  assert.equal(checked.count, 1);
+  assert.equal(checked.variationCount, 4);
+  assert.equal(sanitizeGenerateBody({ ...request, variationCount: 1000 }, info).variationCount, 8);
+  const { variationCount: _variationCount, ...legacyRequest } = request;
+  assert.equal(sanitizeGenerateBody({ ...legacyRequest, count: 4 }, info).variationCount, undefined);
+});

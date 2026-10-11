@@ -934,6 +934,7 @@ export function generationSettings(body) {
     comfyBackend: body.comfyBackend || "primary",
     workflow: body.workflow || "",
     profileId: body.profileId || "",
+    ...(body.variationCount ? { variationCount: Number(body.variationCount) } : {}),
     steps: Number(body.steps || 0),
     cfg: Number(body.cfg || 0),
     sampler: body.sampler || "",

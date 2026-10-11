@@ -7,6 +7,7 @@ import { clearLoraLibrary } from './lora-storage';
 import { retryRequest, type RetryOptions, type RetryRequest } from './retry';
 import { downloadActions } from './useModelDownloads';
 import { autoUpscaleQuality } from './useUpscale';
+import { generationPlan } from './generationOptions';
 import type { GalleryItem, Job } from './types';
 
 type GalleryPayload = { items?: GalleryItem[]; outputs?: GalleryItem[] };
@@ -121,10 +122,13 @@ export function useGenerationActions(view: any) {
     generatePostingRef.current = true;
     const optimisticJobIds: string[] = [];
     try {
-      const effectiveCount = retry ? Math.max(1, Number(retry.body.count) || 1) : mode === "image" && currentProfile?.capabilities?.variations === false ? 1 : count;
-      const separate = !retry && runMode === "image" && prefs.variationQueueMode === "separate";
-      const imageRuns = separate ? effectiveCount : 1;
-      const requestCount = separate ? 1 : effectiveCount;
+      const { effectiveCount, separate, imageRuns, requestCount } = generationPlan({
+        count: retry ? Number(retry.body.count || 1) : count,
+        kind: runMode,
+        profile: retry ? { family: retry.body.workflow, model: retry.body.model } : currentProfile,
+        references: retry ? (Array.isArray(retry.body.referenceAssets) && retry.body.referenceAssets.length ? retry.body.referenceAssets : retry.body.startImageId ? [retry.body.startImageId] : []) : (referenceAssets?.length ? referenceAssets : canUseStartImage && (startImageId || startImage) ? [startImageId || startImage] : []),
+        queueMode: retry ? "batch" : prefs.variationQueueMode
+      });
       const startMessage = retry ? retry.label
         : runMode === "image"
         ? separate && effectiveCount > 1
@@ -154,6 +158,7 @@ export function useGenerationActions(view: any) {
         scheduler,
         seed,
         count: effectiveCount,
+        variationCount: effectiveCount,
         frames,
         fps,
         autoResizeInputs: prefs.autoResizeInputs !== false,

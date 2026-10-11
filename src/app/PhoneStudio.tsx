@@ -362,6 +362,8 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
   const selectedItems = selecting ? gallery.filter((item) => selection!.has(item.id)) : [];
   const selectable = gallery.filter((item) => item.status === 'done' || item.status === 'error');
   const endSelection = () => setSelection(null);
+  const reducedMotion = useReducedMotion();
+  const scrollToTop = () => galleryStageRef.current?.scrollTo({ left: 0, top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
 
   // Progress of what is running, for the ring on the pill and its second line.
   const pending = gallery.filter((item) => item.status === 'pending');
@@ -421,7 +423,11 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
           <span />
         </button>
         <div className="phone-title">
-          {hiddenSpace ? <><button type="button" className="phone-icon" aria-label="Back to the gallery" onClick={toggleHiddenSpace}><ArrowLeft size={20} /></button><LockKeyhole size={16} className="phone-ember" /><span>Hidden</span></> : <span>Gallery</span>}
+          {hiddenSpace ? <button type="button" className="phone-icon" aria-label="Back to the gallery" onClick={toggleHiddenSpace}><ArrowLeft size={20} /></button> : null}
+          <button type="button" className="phone-scroll-top" aria-label="Scroll To Top" onClick={scrollToTop}>
+            {hiddenSpace ? <LockKeyhole size={16} className="phone-ember" /> : null}
+            <span>{hiddenSpace ? 'Hidden' : 'Gallery'}</span>
+          </button>
         </div>
         {!hiddenLocked ? (
           <button type="button" className={cn('phone-icon', searchActive(gallerySearch) && 'is-on')} aria-label="Search" aria-expanded={searchOpen || searchActive(gallerySearch)} onClick={() => { if (searchOpen || searchActive(gallerySearch)) { setGallerySearch(emptySearch); setSearchOpen(false); } else setSearchOpen(true); }}><Search size={21} /></button>
@@ -534,10 +540,9 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
     aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, changeMode, count, countMeta, setCount, steps, stepsMeta, setSteps,
     referenceInputs, referenceInpaint, referenceAssets, selectReferenceAsset, removeReferenceAsset, confirmAction, showToast,
     generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, loraActiveCount, phoneAdvancedControls, generationEstimate,
-    prefs, chooseAutoUpscale
+    prefs, chooseAutoUpscale, showNegativePrompt, setShowNegativePrompt
   } = view;
   const [sheet, setSheet] = React.useState<'' | 'workflow' | 'aspect' | 'advanced'>('');
-  const [showNegative, setShowNegative] = React.useState(Boolean(negative));
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const { prompts: recentPrompts } = usePromptHistory(open);
   const restarting = Boolean(comfyStatus?.restarting);
@@ -617,7 +622,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
               <History size={15} /> Recent
             </button>
           ) : null}
-          <button type="button" className="phone-compose-recent" aria-label="Clear Prompt & Negative" disabled={!prompt && !negative} onClick={() => { setPrompt(''); setNegative(''); setShowNegative(false); }}>
+          <button type="button" className="phone-compose-recent" aria-label="Clear Prompt & Negative" disabled={!prompt && !negative} onClick={() => { setPrompt(''); setNegative(''); setShowNegativePrompt(false); }}>
             <X size={15} /> Clear Text
           </button>
         </div>
@@ -630,13 +635,13 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
       />
 
       {canUseNegativePrompt ? (
-        showNegative ? (
+        showNegativePrompt ? (
           <label className="phone-field">
             <span>Negative prompt</span>
             <textarea value={negative} rows={2} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
           </label>
         ) : (
-          <button type="button" className="phone-link" onClick={() => setShowNegative(true)}>+ Negative prompt</button>
+          <button type="button" className="phone-link" onClick={() => setShowNegativePrompt(true)}>+ Negative prompt</button>
         )
       ) : null}
 
