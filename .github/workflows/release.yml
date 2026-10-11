@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   release:
+    if: github.repository == 'tristmeister/HEISS-UI'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
