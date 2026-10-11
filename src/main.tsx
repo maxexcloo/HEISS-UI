@@ -1234,7 +1234,7 @@ function App() {
 
   // What Generate would take with these settings, the way generate() would send them.
   const estimateCount = mode === "image" && currentProfile?.capabilities?.variations === false ? 1 : count;
-  const separateRuns = mode === "image" && prefs.variationQueueMode === "separate";
+  const separateRuns = mode === "image" && (prefs.variationQueueMode === "separate" || (estimateCount > 1 && referenceAssets.length > 0));
   const generationEstimate = useGenerationEstimate({
     mode, model: currentProfile?.model || model, profileId: currentProfile?.id || model, family: currentProfile?.family || '', width, height, steps,
     count: separateRuns ? 1 : estimateCount, runs: separateRuns ? estimateCount : 1, frames: mode === "video" ? frames : 0, revision: runningCount,

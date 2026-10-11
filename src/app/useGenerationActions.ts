@@ -122,7 +122,7 @@ export function useGenerationActions(view: any) {
     const optimisticJobIds: string[] = [];
     try {
       const effectiveCount = retry ? Math.max(1, Number(retry.body.count) || 1) : mode === "image" && currentProfile?.capabilities?.variations === false ? 1 : count;
-      const separate = !retry && runMode === "image" && prefs.variationQueueMode === "separate";
+      const separate = !retry && runMode === "image" && (prefs.variationQueueMode === "separate" || (effectiveCount > 1 && referenceAssets?.length > 0));
       const imageRuns = separate ? effectiveCount : 1;
       const requestCount = separate ? 1 : effectiveCount;
       const startMessage = retry ? retry.label
