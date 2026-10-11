@@ -786,7 +786,7 @@ function App() {
         setModels(data);
         const profileId = model || "";
         if (!profileId && !notify) {
-          const defaultProfile = data.profiles.find((item) => item.id === data.defaults.imageModel) || data.profiles[0];
+          const defaultProfile = data.profiles.find((item) => item.id === data.defaults[mode === "video" ? "videoModel" : "imageModel"]) || data.profiles.find((item) => item.kind === mode);
           if (defaultProfile) applyProfile(defaultProfile);
         }
         if (notify) setStatus("Ready");
@@ -1023,6 +1023,7 @@ function App() {
     const nextReferenceInput = imageInputsForProfile(profile)[0];
     if (setModelId) setModel(profile.id);
     setCustomSize(false);
+    setCount(profile.kind === "video" || profile.capabilities?.variations === false ? 1 : Number(profile.defaults.count || prefs.defaultImageCount));
     setTextEncoder(String(profile.defaults.textEncoder || ""));
     setTextEncoders((profile.encoderSlots || []).map((slot) => slot.default));
     setVae(String(profile.defaults.vae || ""));

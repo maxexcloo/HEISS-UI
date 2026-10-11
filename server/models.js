@@ -204,6 +204,7 @@ export function inferModels(info, stats = {}) {
       workflow: workflow.profileId,
       family: workflow.family,
       defaults: {
+        count: detectedDefault(countRange, Number(defaults.count || 1)),
         width: detectedDefault(widthRange, Number(defaults.width || 1024)),
         height: detectedDefault(heightRange, Number(defaults.height || 1024)),
         steps: Number(defaults.steps || detectedDefault(samplerRange.steps, workflow.kind === "video" ? 12 : 20)),
@@ -246,7 +247,7 @@ export function inferModels(info, stats = {}) {
   const videoProfiles = profiles.filter((profile) => profile.kind === "video");
   const unsupportedModels = modelFiles.filter((file) => !file.supported).map((file) => file.name);
   // A ready model is the better first pick than one still waiting on files.
-  const firstReady = (list) => (list.find((profile) => profile.ready !== false) || list[0])?.id || "";
+  const firstReady = (list, configured) => (list.find((profile) => profile.id === configured && profile.ready !== false) || list.find((profile) => profile.ready !== false) || list[0])?.id || "";
   return {
     imageModels: imageProfiles.map((profile) => ({ label: profile.label, value: profile.id })),
     videoModels: videoProfiles.map((profile) => ({ label: profile.label, value: profile.id })),
@@ -264,8 +265,8 @@ export function inferModels(info, stats = {}) {
     schedulers,
     loras,
     defaults: {
-      imageModel: firstReady(imageProfiles),
-      videoModel: firstReady(videoProfiles)
+      imageModel: firstReady(imageProfiles, process.env.HEISS_DEFAULT_IMAGE_PROFILE),
+      videoModel: firstReady(videoProfiles, process.env.HEISS_DEFAULT_VIDEO_PROFILE)
     },
     capabilities: {
       image: imageProfiles.length > 0,

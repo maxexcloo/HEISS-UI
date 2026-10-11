@@ -75,8 +75,9 @@ const nodeRegistryNames = new Set([
 
 const presets = {
   fast: { preScale: 1, targetScale: 1.5, maxShort: 1280, blocksToSwap: 16, tileSize: 768 },
-  balanced: { preScale: 0.7, targetScale: 2, maxShort: 2048, blocksToSwap: 32, tileSize: 1024 },
-  high: { preScale: 0.7, targetScale: 3, maxShort: 2816, blocksToSwap: 36, tileSize: 1024 }
+  // Smaller VAE tiles leave room for a resident image model on 32 GB GPUs.
+  balanced: { preScale: 0.7, targetScale: 2, maxShort: 2048, blocksToSwap: 32, tileSize: 512 },
+  high: { preScale: 0.7, targetScale: 3, maxShort: 2816, blocksToSwap: 36, tileSize: 512 }
 };
 
 export const upscaleNodeClasses = nodePacks.seedvr2.nodes;

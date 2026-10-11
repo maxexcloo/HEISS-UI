@@ -218,3 +218,28 @@ test("HiDream Dev and Fast hide the negative prompt: at CFG 1 it has no effect; 
   const info = objectInfo({ unets: ["hidream_i1_dev_fp8.safetensors", "hidream_i1_fast_fp8.safetensors", "hidream_i1_full_fp8.safetensors"] });
   assert.deepEqual(["dev", "fast", "full"].map((name) => profileFor(info, `hidream_i1_${name}_fp8.safetensors`).capabilities.negativePrompt), [false, false, true]);
 });
+
+
+test("custom batch counts reach the UI and configured ready profiles become instance defaults", () => {
+  const workflows = path.join(scratch, "data", "workflows");
+  fs.mkdirSync(workflows, { recursive: true });
+  const file = path.join(workflows, "batch-profile.json");
+  fs.writeFileSync(file, JSON.stringify({
+    graph: { "1": { class_type: "EmptyLatentImage", inputs: { width: 864, height: 1152, batch_size: 4 } } },
+    heissUi: { id: "batch-profile", name: "Batch Profile", kind: "image", controls: { count: { node: "1", input: "batch_size" } }, defaults: { count: 4, width: 864, height: 1152 } }
+  }));
+  const previous = process.env.HEISS_DEFAULT_IMAGE_PROFILE;
+  try {
+    process.env.HEISS_DEFAULT_IMAGE_PROFILE = "custom:batch-profile";
+    const info = objectInfo({ checkpoints: ["sdxl_turbo_1.0.safetensors"] });
+    const models = inferModels(info);
+    assert.equal(models.defaults.imageModel, "custom:batch-profile");
+    assert.equal(models.profiles.find((profile) => profile.id === "custom:batch-profile").defaults.count, 4);
+    process.env.HEISS_DEFAULT_IMAGE_PROFILE = "custom:missing";
+    assert.notEqual(inferModels(info).defaults.imageModel, "custom:missing");
+  } finally {
+    if (previous === undefined) delete process.env.HEISS_DEFAULT_IMAGE_PROFILE;
+    else process.env.HEISS_DEFAULT_IMAGE_PROFILE = previous;
+    fs.rmSync(file);
+  }
+});
