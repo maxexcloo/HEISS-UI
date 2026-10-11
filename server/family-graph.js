@@ -90,9 +90,10 @@ export function familyGraph(body) {
     const loader = clipLoaders[files.length];
     if (!loader || files.some((file) => !file)) throw new Error("Choose a text encoder for every slot this model needs.");
     const inputs = files.length === 1 ? { clip_name: files[0] } : Object.fromEntries(files.map((file, index) => [`clip_name${index + 1}`, file]));
-    if (family.clipType && files.length <= 2) inputs.type = family.clipType;
+    if (family.clipType && files.length <= 2) inputs.type = body.encoderProjection && family.sampling === "h3" ? "krea2" : family.clipType;
     if (files.length <= 2) inputs.device = "default";
     clip = [add(loader, inputs), 0];
+    if (body.encoderProjection && family.sampling === "h3") clip = [add("ClipProjApply", { clip, projection: body.encoderProjection }), 0];
   }
   if (!vae) {
     if (!body.vae) throw new Error("Choose a VAE for this model.");

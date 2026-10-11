@@ -316,6 +316,31 @@ test("MiniMax H3 decodes video and audio from the same latent", () => {
   assert.equal(byType(graph, "VAELoader").length, 2);
 });
 
+test("MiniMax H3 prefers a projected 4B encoder only with its learned projection installed", () => {
+  const small = put("text_encoders", "h3-test-qwen3vl_4b.safetensors", encoders.qwen3vl_4b);
+  const large = "qwen3vl_32b_minimax_h3.safetensors";
+  const model = put("diffusion_models", "h3-projection-test.safetensors", headers.h3);
+  const info = objectInfo({ unets: [model], clips: [large, small], vaeFiles: ["minimax_h3_video_vae.safetensors", "minimax_h3_audio_vae.safetensors"] });
+  const projection = "mmh3-4b-ClipProj-v3.1.safetensors";
+  assert.deepEqual(inferModels(info).profiles[0].encoderSlots[0].options, [large]);
+  info.ClipProjApply = list({ clip: ["CLIP"], projection: [["<control:identity>"]] });
+  assert.deepEqual(inferModels(info).profiles[0].encoderSlots[0].options, [large]);
+  info.ClipProjApply.input.required.projection[0].push(projection);
+  const profile = inferModels(info).profiles[0];
+  assert.deepEqual(profile.encoderSlots[0].options, [small, large]);
+  const request = { kind: "video", workflow: profile.workflow, profileId: profile.id, prompt: "waves" };
+  const body = sanitizeGenerateBody({ ...request, encoderProjection: "<control:identity>" }, info);
+  const graph = familyGraph(body);
+  assert.equal(body.encoderProjection, projection, "projection comes from installed capabilities, not user input");
+  assert.equal(byType(graph, "CLIPLoader")[0].inputs.type, "krea2");
+  assert.equal(byType(graph, "ClipProjApply")[0].inputs.projection, projection);
+  const native = familyGraph(sanitizeGenerateBody({ ...request, textEncoders: [large] }, info));
+  assert.equal(byType(native, "CLIPLoader")[0].inputs.type, "minimax");
+  assert.equal(byType(native, "ClipProjApply").length, 0);
+  info.CLIPLoader.input.required.type[0] = ["minimax"];
+  assert.deepEqual(inferModels(info).profiles[0].encoderSlots[0].options, [large]);
+});
+
 test("validation fills encoders from the profile and rejects files that do not fit", () => {
   const info = objectInfo({ checkpoints: ["zImageRealism_fp8.safetensors"], clips: ["qwen_3_4b.safetensors", "qwen3-4b-heretic_fp8_e4m3fn.safetensors"], vaeFiles: ["ae.safetensors"] });
   const profile = inferModels(info).profiles.find((item) => item.family === "zimage");
