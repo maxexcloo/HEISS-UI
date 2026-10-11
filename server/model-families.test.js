@@ -649,3 +649,18 @@ test("reference slots show only where this ComfyUI has the nodes to wire them", 
   assert.deepEqual(withNodes.mediaInputs.map((input) => input.id), ["reference", "reference_2", "reference_3"]);
   assert.equal(withNodes.aspectPolicy, "reference");
 });
+
+test("built-in image profiles default to four variants within latent node limits", () => {
+  const unets = ["flux1-dev-fp8.safetensors", "flux-2-klein-4b.safetensors", "z_image_turbo.safetensors"];
+  const catalogue = inferModels(objectInfo({ unets }));
+  for (const model of unets) {
+    const profile = catalogue.profiles.find((item) => item.model === model);
+    assert.equal(profile.constraints.count.default, 4, model);
+  }
+  const bounded = inferModels(objectInfo({ unets: [unets[0]], extra: {
+    EmptySD3LatentImage: list({ batch_size: ["INT", { default: 1, min: 1, max: 2, step: 1 }] })
+  } })).profiles.find((item) => item.model === unets[0]);
+  assert.equal(bounded.constraints.count.default, 2);
+  const video = inferModels(objectInfo({ unets: ["wan2.1_t2v_14B.safetensors"] })).profiles.find((item) => item.kind === "video");
+  assert.equal(video.constraints.count.default, 1);
+});

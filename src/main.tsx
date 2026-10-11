@@ -6,7 +6,7 @@ import "./styles.css";
 import { useModelFolders } from './app/useModelFolders';
 import type { ComfyStatus, GalleryItem, Health, LoraSelection, MediaInput, Mode, Models, OutputFolderReport, Paths, Preferences, Profile, InpaintMask, ReferenceAsset, ReferenceInpaint, SelectedReferenceAsset, TouchGesture, UpdatePrefs, UpdateStatus, WorkflowPreferences, WorkflowSummary } from './app/types';
 import { fallbackAspectPresets } from './app/constants';
-import { profileImageCount } from './app/generationOptions';
+import { profileImageCount, profileImageSize } from './app/generationOptions';
 import { apiJson, copyImage, copyText, loadDraft, loadPrefs, referenceAssetFromGallery } from './app/api';
 import { characterMeta, clampText, formatElapsed, generationDetailEntries, settingMax, textLength, titleFromPrompt } from './app/format';
 import { useGalleryColumnCount } from './app/gallery';
@@ -1030,8 +1030,9 @@ function App() {
     setVae(String(profile.defaults.vae || ""));
     setClipType(String(profile.defaults.clipType || ""));
     setWeightDtype(String(profile.defaults.weightDtype || "default"));
-    setWidth(Number(profile.defaults.width || 1024));
-    setHeight(Number(profile.defaults.height || 1024));
+    const size = profileImageSize(profile);
+    setWidth(size.width);
+    setHeight(size.height);
     setSteps(Number(profile.defaults.steps || profile.constraints?.steps?.default || (profile.kind === "video" ? prefs.defaultVideoSteps : prefs.defaultImageSteps)));
     setCfg(Number(profile.defaults.cfg || profile.constraints?.cfg?.default || 1));
     setSampler(String(profile.defaults.sampler || "euler_ancestral"));
@@ -1099,10 +1100,10 @@ function App() {
 
   function applyAspect(value: string, targetMode = mode) {
     if (value === "default") {
-      const defaults = currentProfile?.defaults || {};
+      const size = profileImageSize(currentProfile, targetMode);
       setCustomSize(false);
-      setWidth(Number(defaults.width || (targetMode === "video" ? 512 : 1024)));
-      setHeight(Number(defaults.height || (targetMode === "video" ? 288 : 1024)));
+      setWidth(size.width);
+      setHeight(size.height);
       return;
     }
     if (value === "free" || value === "custom") {
@@ -1215,7 +1216,8 @@ function App() {
   const promptRemaining = promptLimit ? Math.max(0, promptLimit - textLength(prompt)) : undefined;
   const profileOptions = currentProfile?.options || {};
   const aspectValue = `${width}x${height}`;
-  const defaultAspectSize = `${Number(currentProfile?.defaults.width || (mode === "video" ? 512 : 1024))}x${Number(currentProfile?.defaults.height || (mode === "video" ? 288 : 1024))}`;
+  const defaultSize = profileImageSize(currentProfile, mode);
+  const defaultAspectSize = `${defaultSize.width}x${defaultSize.height}`;
   const aspectPickerValue = aspectValue === defaultAspectSize ? "default" : customSize || !aspectOptions.some((item) => item.value === aspectValue) ? "free" : aspectValue;
   const galleryColumnCount = useGalleryColumnCount();
   // Upscales count too, so Stop shows (and stops them) while only an upscale is running.
