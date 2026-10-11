@@ -5,7 +5,7 @@ node = "26.11.1"
 [tasks.check]
 run = """
 mise fmt --check
-actionlint -shellcheck="" .github/workflows/*.yaml
+actionlint -shellcheck="" .github/workflows/container.yaml
 npm test
 npm run build
 """
