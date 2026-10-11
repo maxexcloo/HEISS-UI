@@ -531,7 +531,7 @@ function practicalStepRange(profile: Profile | null | undefined, meta: { min?: n
 function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }: { view: Record<string, any>; open: boolean; onClose: () => void; canUseNegativePrompt: boolean; comfyOffline: boolean }) {
   const {
     prompt, setPrompt, promptLimit, clampText, negative, setNegative, negativeLimit, currentProfile, hiddenSpace,
-    aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, count, countMeta, setCount, steps, stepsMeta, setSteps,
+    aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, changeMode, count, countMeta, setCount, steps, stepsMeta, setSteps,
     referenceInputs, referenceInpaint, referenceAssets, selectReferenceAsset, removeReferenceAsset, confirmAction, showToast,
     generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, loraActiveCount, phoneAdvancedControls, generationEstimate,
     prefs, chooseAutoUpscale
@@ -580,12 +580,20 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
           >
             {restarting ? <><RefreshCw size={18} className="spin" /> Restarting…</>
               : comfyOffline ? <><RefreshCw size={18} className={cn(comfyRetrying && 'spin')} /> {comfyRetrying ? 'Checking…' : 'Check again'}</>
-              : <><ArrowUp size={20} strokeWidth={2.4} /> {mode === 'image' && count > 1 ? `Generate ${count}` : 'Generate'}</>}
+              : <><ArrowUp size={20} strokeWidth={2.4} /> {mode === 'video' ? 'Generate Video' : count > 1 ? `Generate ${count}` : 'Generate'}</>}
             <HapticTarget />
           </button>
         </>
       }
     >
+      <div className="phone-control">
+        <span className="phone-control-label">Generation Mode</span>
+        <div className="phone-seg phone-mode" role="radiogroup" aria-label="Generation Mode">
+          {(['image', 'video'] as const).map((value) => (
+            <button key={value} type="button" role="radio" aria-checked={mode === value} className={cn(mode === value && 'active')} onClick={() => changeMode(value)}>{value === 'image' ? 'Image' : 'Video'}</button>
+          ))}
+        </div>
+      </div>
       <div className="phone-compose">
         <ReferenceSlots
           inputs={referenceInputs || []}
