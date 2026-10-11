@@ -39,6 +39,12 @@ jobs:
             exit 0
           fi
           git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+          if git show-ref --quiet --verify refs/remotes/origin/sync/upstream \
+            && git merge-base --is-ancestor origin/main origin/sync/upstream \
+            && git merge-base --is-ancestor upstream/main origin/sync/upstream; then
+            echo 'The pending sync branch already contains these changes.'
+            exit 0
+          fi
           git switch --create sync/upstream origin/main
           if ! git merge --no-edit upstream/main; then
             git merge --abort
