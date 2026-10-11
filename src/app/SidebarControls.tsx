@@ -78,7 +78,7 @@ function loraSetup(view: any) {
  */
 export function PhoneAdvancedControls({ view }: { view: any }) {
   const {
-    canUseStartImage, cfg, cfgMeta, changeMode, currentProfile, customSize, aspectLocked, denoise, denoiseMeta,
+    canUseStartImage, cfg, cfgMeta, currentProfile, customSize, aspectLocked, denoise, denoiseMeta,
     fps, fpsMeta, frameMeta, frames, height, heightMeta, loras, mode, models, profileOptions, sampler, scheduler, seed,
     setCfg, setDenoise, setFps, setFrames, setHeight, setLoras, setSampler, setScheduler, setSeed, setTextEncoder, setVae,
     setWeightDtype, setWidth, textEncoder, vae, weightDtype, width, widthMeta, loraLibrary, rememberedLoraStrength,
@@ -95,12 +95,6 @@ export function PhoneAdvancedControls({ view }: { view: any }) {
   const parts = encoderSlots.length || currentProfile?.capabilities.textEncoder || showVae || currentProfile?.capabilities.weightDtype;
   return (
     <div className="phone-advanced-controls">
-      <div className="phone-seg phone-mode" role="radiogroup" aria-label="Make">
-        {(["image", "video"] as const).map((value) => (
-          <button key={value} type="button" role="radio" aria-checked={mode === value} className={cn(mode === value && "active")} onClick={() => changeMode(value)}>{value === "image" ? <span>Image</span> : <span>Video<BetaTag /></span>}</button>
-        ))}
-      </div>
-
       {currentProfile ? <ModelSetup key={currentProfile.id} profile={currentProfile} showToast={showToast} onInstalled={() => { refreshModels(false); refreshWorkflows(); }} /> : null}
 
       <h3 className="phone-section">LoRAs</h3>
