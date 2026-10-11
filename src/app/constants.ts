@@ -1,7 +1,7 @@
 import type { AspectPreset, Mode, Preferences } from './types';
 
 export const defaultPrefs: Preferences = {
-  defaultImageCount: 1,
+  defaultImageCount: 4,
   defaultImageSteps: 8,
   defaultVideoFrames: 33,
   defaultVideoSteps: 12,
