@@ -22,7 +22,8 @@ export function snapNumber(value, fallback, range = {}) {
   const min = Number.isFinite(Number(range.min)) ? Number(range.min) : -Number.MAX_SAFE_INTEGER;
   const max = Number.isFinite(Number(range.max)) ? Number(range.max) : Number.MAX_SAFE_INTEGER;
   const base = clampNumber(value, fallback, min, max);
-  const snapped = Math.round(base / step) * step;
+  const offset = Number(range.offset || 0);
+  const snapped = Math.round((base - offset) / step) * step + offset;
   return Math.max(min, Math.min(max, snapped));
 }
 

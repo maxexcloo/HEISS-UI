@@ -161,6 +161,12 @@
 }
 
 /* Phone: a chip in the prompt box, and a sheet of big rows. */
+.phone-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.phone-compose-recent:disabled { opacity: .4; }
 .phone-compose-recent {
   justify-self: end;
   display: inline-flex;

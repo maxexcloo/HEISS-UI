@@ -133,8 +133,16 @@ export function familyGraph(body) {
 
   // ---- MiniMax H3: its own conditioning + latent node, guidance-free, video with audio
   if (family.sampling === "h3") {
-    const h3 = add("MiniMaxH3ImageToVideo", { clip, vae, prompt: body.prompt || "", width, height, length: frames });
     const audioVae = [add("VAELoader", { vae_name: body.audioVae }), 0];
+    const references = (body.referenceImages?.length ? body.referenceImages : body.startImageComfy ? [body.startImageComfy] : []).slice(0, variant.references ?? family.references);
+    if (variant.referenceRequired && !references.length) throw new Error("Add a reference image for MiniMax H3 Reference.");
+    const referenceInputs = variant.referenceRequired
+      ? Object.fromEntries(references.map((image, index) => [`ref_images.ref_image_${index}`, [add("LoadImage", { image }), 0]]))
+      : references.length ? { first_frame: [add("LoadImage", { image: references[0] }), 0] } : {};
+    const h3 = add(variant.referenceRequired ? "MiniMaxH3ReferenceToVideo" : "MiniMaxH3ImageToVideo", {
+      clip, vae, prompt: body.prompt || "", width, height, length: frames,
+      ...(variant.referenceRequired ? { audio_vae: audioVae, ref_image_size: "match" } : {}), ...referenceInputs
+    });
     const sampled = customSampler(add, {
       model, seed, steps: body.steps, sampler: body.sampler || "res_multistep",
       guider: add("BasicGuider", { model, conditioning: [h3, 0] }),
@@ -273,7 +281,12 @@ export function familyGraph(body) {
 
   // ---- Sample
   let samples;
-  if (family.sampling === "custom") {
+  if (variant.sigmas) {
+    model = [add("QwenImage21Cache", { model, device: "auto", dtype: "default" }), 0];
+    const sigmas = add("ManualSigmas", { sigmas: variant.sigmas.join(", ") });
+    const guider = add("BasicGuider", { model, conditioning: positive });
+    samples = customSampler(add, { seed, sampler: "euler", guider, sigmas, latent });
+  } else if (family.sampling === "custom") {
     let sigmas = family.scheduler === "flux2"
       ? add("Flux2Scheduler", { steps: Number(body.steps || 20), width: latentWidth, height: latentHeight })
       : add("BasicScheduler", { model, scheduler: body.scheduler || "simple", steps: Number(body.steps || 20), denoise });
