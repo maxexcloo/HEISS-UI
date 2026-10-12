@@ -205,12 +205,27 @@
   .app-shell .zen-control-button.gallery-search-button { left: calc(max(8px, env(safe-area-inset-left)) + var(--deck-h) + 8px); }
 }
 
-/* The field floats over the top of the gallery, where a search is looked for,
-   and the first row of tiles starts below it. */
+/* Keep mode selection above the library and its optional search field. */
+:is(.app-shell, .zen-shell):has(.gallery-generation-mode) { --gallery-mode-h: 56px; }
+.gallery-generation-mode {
+  position: fixed;
+  top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px));
+  left: 50%;
+  translate: -50% 0;
+  z-index: 12;
+  width: min(240px, calc(100vw - 2 * var(--deck-gap, 18px)));
+  margin: 0;
+  background: #1b1b1b;
+}
+.app-shell:has(.gallery-generation-mode) .stage-gallery {
+  padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px) + var(--gallery-mode-h) + 12px);
+  scroll-padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px) + var(--gallery-mode-h) + 12px);
+}
+
 .gallery-search {
   position: fixed;
   /* Under the activity pills while one shows (--islands-h), over the tiles' glass. */
-  top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px));
+  top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px) + var(--gallery-mode-h, 0px));
   left: 50%;
   z-index: 12;
   width: min(480px, calc(100vw - 2 * var(--deck-gap, 18px)));
@@ -287,14 +302,16 @@
 }
 
 .app-shell:has(.gallery-search) .stage-gallery {
-  padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--dock-h) + 12px);
-  scroll-padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--dock-h) + 12px);
+  padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px) + var(--gallery-mode-h, 0px) + var(--dock-h) + 12px);
+  scroll-padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + var(--islands-h, 0px) + var(--gallery-mode-h, 0px) + var(--dock-h) + 12px);
 }
 /* In Hidden the bar owns the top left; where both would touch, the field goes under it. */
 @media (max-width: 920px) {
-  .gallery-search.is-hidden-space { top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + 42px + 8px + var(--islands-h, 0px)); }
+  .is-hidden-space .gallery-generation-mode { top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + 42px + 8px + var(--islands-h, 0px)); }
+  .app-shell.is-hidden-space:has(.gallery-generation-mode) .stage-gallery { padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + 42px + 8px + var(--islands-h, 0px) + var(--gallery-mode-h) + 12px); }
+  .gallery-search.is-hidden-space { top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + 42px + 8px + var(--islands-h, 0px) + var(--gallery-mode-h, 0px)); }
   .app-shell.is-hidden-space:has(.gallery-search) .stage-gallery {
-    padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + 42px + 8px + var(--dock-h) + 12px);
+    padding-top: calc(max(var(--deck-gap, 18px), env(safe-area-inset-top)) + 42px + 8px + var(--islands-h, 0px) + var(--gallery-mode-h, 0px) + var(--dock-h) + 12px);
   }
 }
 

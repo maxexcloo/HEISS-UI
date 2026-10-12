@@ -5,7 +5,7 @@ import { ChevronRight, GalleryHorizontalEnd, RotateCcw, Wand2, X } from 'lucide-
 import { fallbackSamplers, fallbackSchedulers } from './constants';
 import { cn } from './format';
 import { maxLoras } from './loras';
-import { BetaTag, Field, NumberPicker, Skeleton, StudioSelect as Select, Tip } from './components';
+import { Field, NumberPicker, Skeleton, StudioSelect as Select, Tip } from './components';
 import { LoraPanel } from './LoraPanel';
 import { ModelSetup } from './ModelSetup';
 import { ModelFoldersNotice } from './ModelFoldersNotice';
@@ -152,7 +152,7 @@ export function ModelLoraControls({ view }: { view: any }) {
 
 export function SidebarControls({ view }: { view: any }) {
   const {
-    canUseStartImage, cfg, cfgMeta, changeMode, count, countMeta, currentProfile, currentWorkflow,
+    canUseStartImage, cfg, cfgMeta, count, countMeta, currentProfile, currentWorkflow,
     customSize, aspectLocked, denoise, denoiseMeta, height, heightMeta, loras,
     loraActiveCount, mode, models, profileOptions, sampler, scheduler, seed,
     setCfg, setCount, setDenoise, setHeight, setLoras, setSampler,
@@ -173,11 +173,6 @@ export function SidebarControls({ view }: { view: any }) {
 
   return (
     <>
-      <div className="mode-tabs" role="tablist" aria-label="Generation mode">
-        <Tip content="Image generation"><button type="button" role="tab" aria-selected={mode === "image"} className={cn(mode === "image" && "active")} onClick={() => changeMode("image")}>Image</button></Tip>
-        <Tip content="Video generation (beta)"><button type="button" role="tab" aria-selected={mode === "video"} className={cn(mode === "video" && "active")} onClick={() => changeMode("video")}>Video<BetaTag /></button></Tip>
-      </div>
-
       <div className="sidebar-scroll">
       <WorkflowPreviewCard workflow={currentWorkflow} onOpen={() => setWorkflowGalleryOpen(true)} />
       <ModelLoraControls view={view} />

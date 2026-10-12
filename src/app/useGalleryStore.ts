@@ -248,6 +248,14 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
   };
   // A slower answer to an earlier search must not replace a newer one.
   const loadSeq = useRef(0);
+  const searchKey = hidden || !searchActive(search) ? "" : `${search.q.trim()}\n${search.favorites}`;
+  const requestKey = JSON.stringify([mode, space, includeFailed, searchKey]);
+  const requestKeyRef = useRef(requestKey);
+  // Invalidate immediately, including the debounce window and an A → B → A switch.
+  if (requestKeyRef.current !== requestKey) {
+    requestKeyRef.current = requestKey;
+    loadSeq.current += 1;
+  }
   // Moving between the gallery and Hidden swaps the list, and a page still on
   // its way from the space just left is dropped when it lands. The gallery is
   // kept aside while in Hidden so coming back shows it at once and only syncs;
@@ -272,7 +280,7 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
     const seq = ++loadSeq.current;
     // Hidden is its own list; a locked session gets nothing back and shows the lock instead.
     const page = hidden
-      ? await apiJson<GalleryPage>(`/api/hidden/gallery?type=${encodeURIComponent(mode)}&includeFailed=${includeFailed}&bundles=0`).catch(() => { onLocked?.(); return { items: [], revision: 0 }; })
+      ? await apiJson<GalleryPage>(`/api/hidden/gallery?type=${encodeURIComponent(mode)}&includeFailed=${includeFailed}&bundles=0`).catch(() => { if (seq === loadSeq.current) onLocked?.(); return { items: [], revision: 0 }; })
       : await apiJson<GalleryPage>(`/api/gallery?type=${encodeURIComponent(mode)}&limit=220&includeFailed=${includeFailed}&bundles=0${searchQuery()}`);
     if (spaceRef.current !== space || seq !== loadSeq.current) return page;
     dispatch({ type: "reset", page });
@@ -280,7 +288,6 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
   }, [hidden, includeFailed, mode, onLocked, space]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A new search (or leaving one) reloads the first page; typing waits a beat.
-  const searchKey = hidden || !searchActive(search) ? "" : `${search.q.trim()}\n${search.favorites}`;
   const loadRef = useRef(loadGallery);
   loadRef.current = loadGallery;
   const lastSearchKey = useRef(searchKey);
@@ -293,30 +300,33 @@ export function useGalleryStore({ mode, showFailedItems, space = "gallery", onLo
   }, [searchKey]);
 
   // Scroll fires many times near the bottom; one request per cursor at a time.
-  const loadingMoreRef = useRef("");
+  const loadingMoreRef = useRef<{ cursor: string; seq: number } | null>(null);
   const loadMoreGalleryItems = useCallback(async () => {
-    if (!state.hasMore || !state.nextCursor || loadingMoreRef.current === state.nextCursor) return;
-    loadingMoreRef.current = state.nextCursor;
+    const seq = loadSeq.current;
+    if (hidden || !state.hasMore || !state.nextCursor || (loadingMoreRef.current?.cursor === state.nextCursor && loadingMoreRef.current.seq === seq)) return;
+    const request = { cursor: state.nextCursor, seq };
+    loadingMoreRef.current = request;
     try {
       const page = await apiJson<GalleryPage>(`/api/gallery?type=${encodeURIComponent(mode)}&limit=220&cursor=${encodeURIComponent(state.nextCursor)}&includeFailed=${includeFailed}&bundles=0${searchQuery()}`);
-      dispatch({ type: "append", page });
+      if (seq === loadSeq.current) dispatch({ type: "append", page });
     } catch {
       // Leave the cursor as it was, so the next scroll or the button tries again.
     } finally {
-      loadingMoreRef.current = "";
+      if (loadingMoreRef.current === request) loadingMoreRef.current = null;
     }
-  }, [includeFailed, mode, state.hasMore, state.nextCursor]);
+  }, [hidden, includeFailed, mode, state.hasMore, state.nextCursor]);
 
   const loadGalleryDelta = useCallback(async () => {
     if (!state.revision) return loadGallery();
+    const seq = loadSeq.current;
     if (hidden) {
       // Locked from another tab or device: say so here too instead of showing a stale grid.
-      const page = await apiJson<GalleryPage & { unchanged?: boolean }>(`/api/hidden/gallery?type=${encodeURIComponent(mode)}&includeFailed=${includeFailed}&since=${state.revision}`).catch(() => { onLocked?.(); return null; });
-      if (page && !page.unchanged && spaceRef.current === space) dispatch({ type: "reset", page });
+      const page = await apiJson<GalleryPage & { unchanged?: boolean }>(`/api/hidden/gallery?type=${encodeURIComponent(mode)}&includeFailed=${includeFailed}&since=${state.revision}`).catch(() => { if (seq === loadSeq.current) onLocked?.(); return null; });
+      if (page && !page.unchanged && seq === loadSeq.current) dispatch({ type: "reset", page });
       return page;
     }
     const delta = await apiJson<GalleryDelta>(`/api/gallery/delta?since=${state.revision}&type=${encodeURIComponent(mode)}&includeFailed=${includeFailed}${searchQuery()}`);
-    if (spaceRef.current !== space) return delta;
+    if (seq !== loadSeq.current) return delta;
     if (delta.reset) return loadGallery();
     if (delta.removes?.length) dispatch({ type: "remove", keys: delta.removes, revision: delta.revision });
     if (delta.upserts?.length) dispatch({ type: "upsert", items: delta.upserts, revision: delta.revision });

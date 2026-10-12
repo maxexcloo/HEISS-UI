@@ -547,7 +547,16 @@ export function StudioView({ view }: { view: Record<string, any> }) {
     <HiddenActionsContext.Provider value={hiddenActions}>
     <TileLongPressContext.Provider value={phoneTiles}>
     <FavoriteContext.Provider value={toggleFavorite}>
-    <div className={cn(phone ? "phone-shell" : prefs.zenMode ? "zen-shell" : "app-shell", canUseNegativePrompt && "negative-open", hiddenSpace && "is-hidden-space", hiddenLocked && "is-hidden-locked", passageClass)}>
+    <div className={cn(phone ? "phone-shell" : prefs.zenMode ? "zen-shell" : "app-shell", canUseNegativePrompt && "negative-open", hiddenSpace && "is-hidden-space", hiddenLocked && "is-hidden-locked", passageClass)} style={!phone ? { "--islands-h": `${islandsHeight ? islandsHeight + 8 : 0}px` } as React.CSSProperties : undefined}>
+      {!phone && !hiddenLocked ? (
+        <div className="gallery-generation-mode mode-tabs" role="group" aria-label="Generation Mode">
+          {(["image", "video"] as const).map((nextMode) => (
+            <button key={nextMode} type="button" aria-pressed={mode === nextMode} className={cn(mode === nextMode && "active")} onClick={() => view.changeMode(nextMode)}>
+              {nextMode === "image" ? "Image" : "Video"}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {phone ? <RunSheet run={runSheet} onClose={() => setRunSheet(null)} openItem={openItem} onShowInGallery={showRunInGallery} /> : null}
       {phone ? (
         <PhoneShell
