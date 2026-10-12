@@ -8,12 +8,21 @@ export function modelName(profile) {
   let action = details.find((detail) => /^(Generate|Edit|Reference|Non-Reference|Animate Image)$/i.test(detail));
   if (action === 'Reference') action = profile?.kind === 'video' ? 'Animate Image' : 'Edit';
   if (action === 'Non-Reference') action = 'Generate';
+  if (!action && / Image Edit$/.test(name)) {
+    name = name.replace(/ Edit$/, '');
+    action = 'Edit';
+  }
+  if (!action && / Image To Video$/.test(name)) {
+    name = name.replace(/Image To Video$/, 'Video');
+    action = 'Animate Image';
+  }
   if (/\s+KV\b/.test(name)) {
     name = name.replace(/\s+KV\b/, '');
     precision.push('KV Cache');
   }
   const settings = details.filter((detail) => !/^(Generate|Edit|Reference|Non-Reference|Animate Image|Standard|Default|Distilled)$/i.test(detail))
     .flatMap((detail) => detail.replace(/\s*\(≈([\d.]+)\s*s\)/g, ' · ~$1 s').split(' · '));
+  if (profile?.family !== 'grok' && profile?.defaults?.steps && !settings.some((detail) => /\bSteps\b/i.test(detail))) settings.push(`${profile.defaults.steps} Steps`);
   if (!action && profile?.kind) action = 'Generate';
   return { name: `${name || lead}${action ? ` · ${action}` : ''}`, detail: [...precision, ...settings].join(' · ') || profile?.familyName || profile?.family || '' };
 }
