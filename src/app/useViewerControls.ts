@@ -1,5 +1,6 @@
 import { fallbackAspectPresets } from './constants';
 import { outputProfile } from './generationOptions';
+import { reusedNegative } from './composerSettings';
 import { clampText, settingMax } from './format';
 import { touchCenter, touchDistance } from './gallery';
 import { normalizeLoras } from './loras';
@@ -82,9 +83,10 @@ export function useViewerControls(view: any) {
     const nextPromptLimit = settingMax(matchingProfile?.constraints?.prompt);
     const nextNegativeLimit = settingMax(matchingProfile?.constraints?.negative);
     setPrompt(clampText(item.prompt || "", nextPromptLimit));
-    const nextNegative = clampText(item.negative || "", nextNegativeLimit);
+    const currentNegative = view.negativeForMode?.(nextMode) ?? view.draft?.negative ?? "";
+    const nextNegative = reusedNegative(clampText(item.negative || "", nextNegativeLimit), currentNegative);
     setNegative(nextNegative);
-    setShowNegativePrompt(Boolean(nextNegative));
+    setShowNegativePrompt(true);
     setWidth(Number(item.width || itemSettings.width || width));
     setHeight(Number(item.height || itemSettings.height || height));
     if (itemSettings.steps) setSteps(Number(itemSettings.steps));

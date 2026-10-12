@@ -8,19 +8,6 @@
 
 .zen-prompt-actions { position: relative; }
 
-.model-activity {
-  min-width: 0;
-  padding: 4px 10px;
-  color: hsl(var(--muted-foreground));
-  font-size: 11px;
-  line-height: 1.5;
-}
-.model-activity-row { display: flex; gap: 6px; min-width: 0; }
-.model-activity-row > span:first-child { flex-shrink: 0; }
-.model-activity-names { min-width: 0; overflow-wrap: anywhere; }
-.phone-gallery > .model-activity { padding: 4px 8px 10px; font-size: 12px; }
-.phone-create .model-activity { padding: 0 0 12px; font-size: 12px; }
-
 /* The row never wraps any more: the ladder is what makes it fit. */
 .zen-inline-settings { flex-wrap: nowrap; }
 
@@ -309,3 +296,11 @@
   cursor: default;
 }
 .zen-prompt-actions:not([data-density-level="0"]) .composer-estimate { display: none; }
+
+.model-loras { min-width: 0; margin: 12px 0; }
+.model-loras > h3 { margin: 0 0 8px; font-size: 13px; }
+.lora-filter { display: grid; gap: 6px; padding: 8px 0; }
+.lora-filter label { display: grid; gap: 6px; font-size: 12px; }
+.lora-filter select { min-height: 44px; max-width: 100%; }
+.lora-filter small { color: hsl(var(--muted-foreground)); font-size: 11px; }
+.lora-option-copy > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

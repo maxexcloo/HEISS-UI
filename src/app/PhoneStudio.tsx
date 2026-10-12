@@ -1,4 +1,5 @@
 import React from 'react';
+import { modelName } from './catalogueNames';
 import { GridAutoplayButton } from './GridAutoplayButton';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from 'framer-motion';
@@ -23,7 +24,6 @@ import { PhoneSearchBar } from './GallerySearch';
 import { StackRunsButton } from './StackRunsButton';
 import { canStar, emptySearch, searchActive, type GallerySearch } from './favorites';
 import { usePromptHistory } from './recentPrompts';
-import { ModelActivity } from './ModelActivity';
 
 /* ---------------------------------------------------------------------------
    The phone studio
@@ -457,7 +457,6 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
       ) : null}
 
       <main ref={galleryStageRef} className="phone-gallery" onScroll={onGalleryScroll}>
-        {!hiddenLocked && !selecting ? <ModelActivity status={comfyStatus} /> : null}
         {galleryBody}
       </main>
 
@@ -541,8 +540,8 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
     prompt, setPrompt, promptLimit, clampText, negative, setNegative, negativeLimit, currentProfile, hiddenSpace,
     aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, changeMode, count, countMeta, setCount, steps, stepsMeta, setSteps,
     referenceInputs, referenceInpaint, referenceAssets, selectReferenceAsset, removeReferenceAsset, confirmAction, showToast,
-    generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, loraActiveCount, phoneAdvancedControls, generationEstimate,
-    prefs, chooseAutoUpscale, showNegativePrompt, setShowNegativePrompt
+    generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, modelLoraControls, phoneVideoDurationControls, phoneAdvancedControls, generationEstimate,
+    prefs, chooseAutoUpscale, setShowNegativePrompt
   } = view;
   const [sheet, setSheet] = React.useState<'' | 'workflow' | 'aspect' | 'advanced'>('');
   const [historyOpen, setHistoryOpen] = React.useState(false);
@@ -593,7 +592,6 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         </>
       }
     >
-      <ModelActivity status={comfyStatus} />
       <div className="phone-control">
         <span className="phone-control-label">Generation Mode</span>
         <div className="phone-seg phone-mode" role="radiogroup" aria-label="Generation Mode">
@@ -638,14 +636,10 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
       />
 
       {canUseNegativePrompt ? (
-        showNegativePrompt ? (
-          <label className="phone-field">
-            <span>Negative prompt</span>
-            <textarea value={negative} rows={2} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
-          </label>
-        ) : (
-          <button type="button" className="phone-link" onClick={() => setShowNegativePrompt(true)}>+ Negative prompt</button>
-        )
+        <label className="phone-field">
+          <span>Negative Prompt</span>
+          <textarea value={negative} rows={2} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
+        </label>
       ) : null}
 
       {String(seed || '').trim() ? (
@@ -657,9 +651,13 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
       <div className="phone-group">
         <button type="button" className="phone-row" onClick={() => setSheet('workflow')}>
           <SlidersHorizontal size={20} />
-          <span>{currentProfile?.displayName || currentProfile?.label || 'Choose a model'}<small>{currentProfile ? familyLabel(currentProfile) : 'Model'}</small></span>
+          <span>{currentProfile ? modelName(currentProfile).name : 'Choose a Model'}<small>{currentProfile ? modelName(currentProfile).detail : 'Model'}</small></span>
           <ChevronRight size={18} className="phone-row-end" />
         </button>
+      </div>
+      <div className="phone-loras">{modelLoraControls}</div>
+      {phoneVideoDurationControls}
+      <div className="phone-group">
         {(aspectOptions || []).length && !aspectLocked ? (
           <button type="button" className="phone-row" onClick={() => setSheet('aspect')}>
             <span className="aspect-shape phone-aspect" style={aspect ? aspectIconStyle(aspect) : undefined} />
@@ -699,7 +697,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
       </div>
 
       <button type="button" className="phone-link is-strong" onClick={() => setSheet('advanced')}>
-        Advanced settings{loraActiveCount ? ` · ${loraActiveCount} LoRA${loraActiveCount === 1 ? '' : 's'}` : ''} <ChevronRight size={16} />
+        Advanced Settings <ChevronRight size={16} />
       </button>
 
       <WorkflowSheet view={view} open={sheet === 'workflow'} onClose={() => setSheet('')} />
@@ -718,7 +716,7 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
   const profiles = modelProfiles || [];
   const favorites = new Set(modelMenu?.favorites || []);
   const needle = query.trim().toLowerCase();
-  const matches = (profile: Profile) => !needle || `${profile.displayName || ''} ${profile.label || ''} ${familyLabel(profile)}`.toLowerCase().includes(needle);
+  const matches = (profile: Profile) => !needle || `${profile.displayName || ''} ${profile.label || ''} ${familyLabel(profile)} ${profile.model || ''}`.toLowerCase().includes(needle);
   const byId = new Map(profiles.map((profile) => [profile.id, profile]));
   const starred = profiles.filter((profile) => favorites.has(profile.id) && matches(profile));
   const recent = needle ? [] : (modelMenu?.recents || []).filter((id) => !favorites.has(id)).map((id) => byId.get(id)).filter((profile): profile is Profile => Boolean(profile)).slice(0, 4);
@@ -727,7 +725,7 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
   const row = (profile: Profile) => (
     <div key={profile.id} className="phone-row-wrap">
       <button type="button" className={cn('phone-row', profile.id === model && 'is-current')} onClick={() => { pickModel(profile.id); onClose(); }}>
-        <span>{profile.displayName || profile.label}<small className={cn(setupNote(profile) && 'is-setup')}>{setupNote(profile) || familyLabel(profile)}</small></span>
+        <span>{modelName(profile).name}<small className={cn(setupNote(profile) && 'is-setup')}>{[modelName(profile).detail, setupNote(profile)].filter(Boolean).join(' · ')}</small></span>
         {profile.id === model ? <Check size={18} className="phone-row-end" /> : null}
       </button>
       {modelMenu ? (
@@ -748,8 +746,8 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
       {!profiles.length ? <p className="phone-empty">{(view.comfyStatus?.connected) ? 'No models yet. Get one on the computer running HEISS UI.' : 'ComfyUI is offline. Models show up when it’s back.'}</p> : null}
       {starred.length ? <><h3 className="phone-section">Favorites</h3><div className="phone-group">{starred.map(row)}</div></> : null}
       {recent.length ? <><h3 className="phone-section">Recent</h3><div className="phone-group">{recent.map(row)}</div></> : null}
-      {rest.some((profile) => !profile.id.startsWith('custom:')) ? <><h3 className="phone-section">{starred.length || recent.length ? 'All models' : ''}</h3><div className="phone-group">{rest.filter((profile) => !profile.id.startsWith('custom:')).map(row)}</div></> : null}
-      {rest.some((profile) => profile.id.startsWith('custom:')) ? <><h3 className="phone-section">Your workflows</h3><div className="phone-group">{rest.filter((profile) => profile.id.startsWith('custom:')).map(row)}</div></> : null}
+      {Array.from(new Set(rest.filter((profile) => !profile.id.startsWith('custom:')).map(familyLabel))).sort().map((family) => <React.Fragment key={family}><h3 className="phone-section">{family}</h3><div className="phone-group">{rest.filter((profile) => !profile.id.startsWith('custom:') && familyLabel(profile) === family).map(row)}</div></React.Fragment>)}
+      {rest.some((profile) => profile.id.startsWith('custom:')) ? <><h3 className="phone-section">Your Workflows</h3><div className="phone-group">{rest.filter((profile) => profile.id.startsWith('custom:')).map(row)}</div></> : null}
       {needle && !starred.length && !rest.length ? <p className="phone-empty">Nothing matches “{query.trim()}”.</p> : null}
     </Sheet>
   );

@@ -54,13 +54,10 @@ test("health keeps the studio connected while either configured backend is avail
     assert.equal(status.connected, true);
     assert.equal(status.backends.primary.connected, true);
     assert.equal(status.backends.video.connected, true);
-    assert.equal(status.backends.primary.modelActivity, null);
-    assert.equal(status.backends.video.modelActivity, null);
     primary.setDown(true);
     status = (await api("/api/comfy/status")).body;
     assert.equal(status.connected, true);
     assert.equal(status.backends.primary.connected, false);
-    assert.equal(status.backends.primary.modelActivity, null);
     assert.equal(status.backends.video.connected, true);
     video.setDown(true);
     status = (await api("/api/comfy/status")).body;
@@ -94,8 +91,6 @@ test("HTTP catalogue and generate select the video node schema, keep Grok primar
   const grokPrompt = await grokQueued;
   assert.equal(grokPrompt.client_id, grokAccepted.body.jobId);
   const status = (await api("/api/comfy/status")).body;
-  assert.equal(status.backends.primary.modelActivity, null);
-  assert.deepEqual(status.backends.video.modelActivity, { models: ["minimax_h3_fl2va_pruned_int8_convrot.safetensors"], state: "generating" });
   assert.doesNotMatch(JSON.stringify(status), /red ceramic teapot/);
   const before = primary.requests.length;
   await api(`/api/jobs/${accepted.body.jobId}/cancel`, {});
@@ -122,8 +117,6 @@ test("completed secondary work recovers after a HEISS restart with prompt and ba
   assert.equal(result.prompt, "a red ceramic teapot");
   assert.equal(result.settings.comfyBackend, "video");
   assert.equal(result.type, "video");
-  const status = (await api("/api/comfy/status")).body;
-  assert.deepEqual(status.backends.video.modelActivity, { models: ["minimax_h3_fl2va_pruned_int8_convrot.safetensors"], state: "last-used" });
 });
 
 test("offline secondary hides H3 and refuses stale H3 requests without primary submission", { timeout: 10000 }, async () => {
