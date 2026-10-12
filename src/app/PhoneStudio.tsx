@@ -111,7 +111,11 @@ export function Sheet({ open, onClose, title, children, footer, full = false, cl
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_event, info) => { if (info.offset.y > 110 || info.velocity.y > 600) onClose(); }}
           >
-            <div className="phone-sheet-grab" onPointerDown={(event) => drag.start(event)}>
+            <div className="phone-sheet-grab" onPointerDown={(event) => {
+              // Header actions must keep their tap, even when a finger moves slightly.
+              if (reduced || !event.isPrimary || event.button !== 0 || (event.target as Element).closest('button, a, input, select, textarea, [role="button"]')) return;
+              drag.start(event);
+            }}>
               <div className="phone-sheet-handle" aria-hidden="true" />
               <header className="phone-sheet-head">
                 <h2>{title}</h2>
@@ -355,7 +359,7 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
   setSelection: (selection: Set<string> | null) => void;
 }) {
   const {
-    prompt, currentProfile, hiddenSpace, hidden, runningCount, cancelQueue, comfyStatus, retryComfyStatus,
+    prompt, currentProfile, hiddenSpace, hidden, runningCount, cancelQueue, comfyStatus, retryComfyStatus, mode, changeMode,
     galleryStageRef, onGalleryScroll, generate, generateDisabled, visibleGallery, openItem, active, deleteItems, hideItems, unhideItems, showToast
   } = view;
   const gallery = (visibleGallery || []) as GalleryItem[];
@@ -446,6 +450,13 @@ export function PhoneShell({ view, galleryBody, canUseNegativePrompt, comfyOffli
         ) : null}
         <button type="button" className="phone-icon" aria-label="More" onClick={() => setMoreOpen(true)}><MoreHorizontal size={22} /></button>
       </header>
+      {!hiddenLocked && !selecting ? (
+        <div className="phone-generation-mode phone-seg" role="radiogroup" aria-label="Generation Mode">
+          {(['image', 'video'] as const).map((value) => (
+            <button key={value} type="button" role="radio" aria-checked={mode === value} className={cn(mode === value && 'active')} onClick={() => changeMode(value)}>{value === 'image' ? 'Image' : 'Video'}</button>
+          ))}
+        </div>
+      ) : null}
       {!hiddenLocked && !selecting ? <PhoneSearchBar search={gallerySearch} setSearch={setGallerySearch} open={searchOpen} setOpen={setSearchOpen} hiddenSpace={Boolean(hiddenSpace)} /> : null}
 
       {runningCount ? (
@@ -538,7 +549,7 @@ function practicalStepRange(profile: Profile | null | undefined, meta: { min?: n
 function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }: { view: Record<string, any>; open: boolean; onClose: () => void; canUseNegativePrompt: boolean; comfyOffline: boolean }) {
   const {
     prompt, setPrompt, promptLimit, clampText, negative, setNegative, negativeLimit, currentProfile, hiddenSpace,
-    aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, changeMode, count, countMeta, setCount, steps, stepsMeta, setSteps,
+    aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, count, countMeta, setCount, steps, stepsMeta, setSteps,
     referenceInputs, referenceInpaint, referenceAssets, selectReferenceAsset, removeReferenceAsset, confirmAction, showToast,
     generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, modelLoraControls, grokMediaControls, phoneVideoDurationControls, phoneAdvancedControls, generationEstimate,
     prefs, chooseAutoUpscale, setShowNegativePrompt
@@ -592,14 +603,6 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         </>
       }
     >
-      <div className="phone-control">
-        <span className="phone-control-label">Generation Mode</span>
-        <div className="phone-seg phone-mode" role="radiogroup" aria-label="Generation Mode">
-          {(['image', 'video'] as const).map((value) => (
-            <button key={value} type="button" role="radio" aria-checked={mode === value} className={cn(mode === value && 'active')} onClick={() => changeMode(value)}>{value === 'image' ? 'Image' : 'Video'}</button>
-          ))}
-        </div>
-      </div>
       <div className="phone-compose">
         <ReferenceSlots
           inputs={referenceInputs || []}
