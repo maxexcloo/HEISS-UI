@@ -129,6 +129,17 @@ async function applyMappedInputs(graph, workflow, body) {
   for (const [key, value] of Object.entries(values)) {
     if (value !== "" && value !== undefined && value !== null) setMappedInput(graph, controls[key], value);
   }
+  // Flux 2's schedule depends on the dimensions of the latent being sampled.
+  for (const sampler of Object.values(graph)) {
+    if (sampler.class_type !== "SamplerCustomAdvanced") continue;
+    const scheduler = graph[sampler.inputs.sigmas?.[0]];
+    const latentId = sampler.inputs.latent_image?.[0];
+    const latent = graph[latentId];
+    if (scheduler?.class_type !== "Flux2Scheduler" || latent?.class_type !== "EmptyFlux2LatentImage") continue;
+    for (const dimension of ["width", "height"]) {
+      if (controls[dimension]?.node === latentId && controls[dimension]?.input === dimension) scheduler.inputs[dimension] = latent.inputs[dimension];
+    }
+  }
   let mappedReference = false;
   for (const mediaInput of workflow.mediaInputs || []) {
     const reference = (body.referenceAssets || []).find((item) => item?.slot === mediaInput.id);

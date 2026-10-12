@@ -280,6 +280,9 @@ export function classifyModel(source, name) {
   const chosen = parseChoice(loadModelChoices()[choiceKey(source, name)], source);
   if (chosen) return finish(chosen.family, "choice", null, chosen.variant);
 
+  // This Krea 2 derivative uses W8A8 tensor names outside the stock header layout.
+  if (source === "unet" && base === "kroma-v0.3.1-turbo-opd-W8A8.safetensors") return finish("krea2", "name", null, "turbo");
+
   if (header) {
     const { family, detail } = familyFromHeader(header);
     if (family && family !== "other") return finish(family, "file", detail);
