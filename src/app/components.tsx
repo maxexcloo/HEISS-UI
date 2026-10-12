@@ -510,7 +510,7 @@ export function ModelPicker({ value, profiles, showInpaint = true, onChange, com
     const byId = new Map(profiles.map((profile) => [profile.id, profile]));
     const starred = profiles.filter((profile) => favorites.has(profile.id));
     const recent = menu.recents.filter((id) => !favorites.has(id)).map((id) => byId.get(id)).filter((profile): profile is Profile => Boolean(profile)).slice(0, menuRecentLimit);
-    const shown = new Set([...starred, ...recent].map((profile) => profile.id));
+    const shown = new Set(starred.map((profile) => profile.id));
     // The rest by family, so seven Sana variants sit together instead of scattering.
     const rest = profiles.filter((profile) => !shown.has(profile.id));
     return [
