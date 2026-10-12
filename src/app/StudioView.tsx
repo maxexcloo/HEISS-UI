@@ -648,7 +648,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               <div className="negative-unavailable-frame">
                 <textarea aria-label="Negative prompt" value={negative} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
               </div>
-              <span>{characterMeta(negative, negativeLimit)}</span>
+              {nearTextLimit(negative, negativeLimit) ? <span>{characterMeta(negative, negativeLimit)}</span> : null}
             </div> : null}
             <StableComposerBar
               hasText={Boolean(prompt || negative)}
@@ -764,7 +764,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
               <div className="negative-unavailable-frame">
                 <textarea aria-label="Negative prompt" value={negative} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
               </div>
-              <span>{characterMeta(negative, negativeLimit)}</span>
+              {nearTextLimit(negative, negativeLimit) ? <span>{characterMeta(negative, negativeLimit)}</span> : null}
             </div> : null}
             <StableComposerBar
               hasText={Boolean(prompt || negative)}
