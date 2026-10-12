@@ -114,8 +114,6 @@ Open `http://localhost:8787`. `/data` retains settings, galleries, histories and
 
 The Container workflow runs checks, builds the image, tests the runtime and scans for fixable high or critical vulnerabilities on every PR. Successful builds on `main` and `v*` tags publish to `ghcr.io/maxexcloo/heiss-ui` with SBOM and provenance. Prefer an immutable `sha-<full commit>` tag or image digest for deployment. The upstream download and website workflows remain restricted to the upstream repository.
 
-The existing [Pull app](https://github.com/wei/pull) opens upstream update PRs using `.github/pull.yml`. Review the diff and container checks before merging.
-
 For local verification, run `mise run setup`, then `mise run check`. Renovate maintains the tool, action, base image and npm dependencies.
 
 ## Supported models
