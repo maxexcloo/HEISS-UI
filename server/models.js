@@ -189,7 +189,7 @@ export function inferModels(info, stats = {}) {
     if (Number(defaults.count)) countRange.default = Number(defaults.count);
     if (Number(defaults.frames)) frameRange.default = Number(defaults.frames);
     if (Number(defaults.fps)) fpsRange.default = Number(defaults.fps);
-    if (workflow.family === "minimax-h3") {
+    if (String(workflow.family || "").replaceAll("-", "_") === "minimax_h3") {
       Object.assign(frameRange, { default: 124, min: 124, max: 362, step: 17, offset: 5 });
       Object.assign(fpsRange, { default: 24, min: 24, max: 24, step: 1 });
     }
@@ -221,7 +221,7 @@ export function inferModels(info, stats = {}) {
       },
       aspects: customAspectSet({ width: detectedDefault(widthRange, Number(defaults.width || 1024)), height: detectedDefault(heightRange, Number(defaults.height || 1024)) }, workflow.aspectRatios, { width: widthRange, height: heightRange }),
       options: { textEncoders: clips, vaes, clipTypes, weightDtypes, samplers, schedulers },
-      constraints: { prompt: textMeta, negative: textMeta, width: widthRange, height: heightRange, count: countRange, frames: frameRange, fps: fpsRange, ...samplerRange, ...(workflow.family === "minimax-h3" ? { steps: { default: Number(defaults.steps), min: Number(defaults.steps), max: Number(defaults.steps), step: 1 } } : {}) },
+      constraints: { prompt: textMeta, negative: textMeta, width: widthRange, height: heightRange, count: countRange, frames: frameRange, fps: fpsRange, ...samplerRange, ...(String(workflow.family || "").replaceAll("-", "_") === "minimax_h3" ? { steps: { default: Number(defaults.steps), min: Number(defaults.steps), max: Number(defaults.steps), step: 1 } } : {}) },
       capabilities: workflow.capabilities,
       mediaInputs: workflow.mediaInputs || [],
       aspectPolicy: workflow.aspectPolicy,

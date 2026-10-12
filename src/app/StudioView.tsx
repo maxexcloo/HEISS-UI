@@ -1,5 +1,4 @@
 import React from 'react';
-import { ModelActivity } from './ModelActivity';
 import { useNeighborPrefetch } from './useNeighborPrefetch';
 import { GridAutoplayButton } from './GridAutoplayButton';
 import { ArrowLeft, ChevronDown, CircleStop, Columns2, Shuffle, ChevronLeft, ChevronRight, ChevronUp, Download, Eye, EyeOff, GalleryHorizontalEnd, ImagePlus, Lock, LockKeyhole, Maximize2, Minimize2, PanelLeft, Plug, RefreshCw, RotateCcw, Settings, SlidersHorizontal, Smartphone, Square, Star, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react';
@@ -548,7 +547,7 @@ export function StudioView({ view }: { view: Record<string, any> }) {
     <HiddenActionsContext.Provider value={hiddenActions}>
     <TileLongPressContext.Provider value={phoneTiles}>
     <FavoriteContext.Provider value={toggleFavorite}>
-    <div className={cn(phone ? "phone-shell" : prefs.zenMode ? "zen-shell" : "app-shell", showNegativePrompt && canUseNegativePrompt && "negative-open", hiddenSpace && "is-hidden-space", hiddenLocked && "is-hidden-locked", passageClass)}>
+    <div className={cn(phone ? "phone-shell" : prefs.zenMode ? "zen-shell" : "app-shell", canUseNegativePrompt && "negative-open", hiddenSpace && "is-hidden-space", hiddenLocked && "is-hidden-locked", passageClass)}>
       {phone ? <RunSheet run={runSheet} onClose={() => setRunSheet(null)} openItem={openItem} onShowInGallery={showRunInGallery} /> : null}
       {phone ? (
         <PhoneShell
@@ -642,16 +641,15 @@ export function StudioView({ view }: { view: Record<string, any> }) {
             {sidebarControls}
           </aside>
           <section className="zen-prompt">
-            <ModelActivity status={comfyStatus} />
             <textarea ref={zenPromptRef} aria-label={hiddenSpace ? "Prompt (Hidden)" : "Prompt"} value={prompt} placeholder={referenceInpaint?.mask ? "Describe what the painted part becomes…" : hiddenSpace ? "Describe what to make, privately…" : "Describe what to make…"} onKeyDown={promptKeyDown} onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))} />
             {nearTextLimit(prompt, promptLimit) ? <span className={cn("prompt-count", promptRemaining === 0 && "limit")}>{characterMeta(prompt, promptLimit)}</span> : null}
-            <div data-open-surface className={cn("negative-drawer", showNegativePrompt && canUseNegativePrompt && "open", !canUseNegativePrompt && "is-unavailable")}>
-              <label className="negative-drawer-label">Negative prompt</label>
+            {canUseNegativePrompt ? <div data-open-surface className="negative-drawer open">
+              <label className="negative-drawer-label">Negative Prompt</label>
               <div className="negative-unavailable-frame">
-                <textarea aria-label="Negative prompt" value={canUseNegativePrompt ? negative : ""} disabled={!canUseNegativePrompt} placeholder={canUseNegativePrompt ? "What to avoid…" : "This model takes no negative prompt"} onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
+                <textarea aria-label="Negative prompt" value={negative} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
               </div>
-              <span>{canUseNegativePrompt ? characterMeta(negative, negativeLimit) : "Unavailable for this model"}</span>
-            </div>
+              <span>{characterMeta(negative, negativeLimit)}</span>
+            </div> : null}
             <StableComposerBar
               hasText={Boolean(prompt || negative)}
               onClearText={() => { setPrompt(""); setNegative(""); setShowNegativePrompt(false); }}
@@ -759,16 +757,15 @@ export function StudioView({ view }: { view: Record<string, any> }) {
             {sidebarControls}
           </aside>
           <section className="zen-prompt">
-            <ModelActivity status={comfyStatus} />
             <textarea ref={zenPromptRef} aria-label={hiddenSpace ? "Prompt (Hidden)" : "Prompt"} value={prompt} placeholder={referenceInpaint?.mask ? "Describe what the painted part becomes…" : hiddenSpace ? "Describe what to make, privately…" : "Describe what to make…"} onKeyDown={promptKeyDown} onChange={(event) => setPrompt(clampText(event.target.value, promptLimit))} />
             {nearTextLimit(prompt, promptLimit) ? <span className={cn("prompt-count", promptRemaining === 0 && "limit")}>{characterMeta(prompt, promptLimit)}</span> : null}
-            <div data-open-surface className={cn("negative-drawer", showNegativePrompt && canUseNegativePrompt && "open", !canUseNegativePrompt && "is-unavailable")}>
-              <label className="negative-drawer-label">Negative prompt</label>
+            {canUseNegativePrompt ? <div data-open-surface className="negative-drawer open">
+              <label className="negative-drawer-label">Negative Prompt</label>
               <div className="negative-unavailable-frame">
-                <textarea aria-label="Negative prompt" value={canUseNegativePrompt ? negative : ""} disabled={!canUseNegativePrompt} placeholder={canUseNegativePrompt ? "What to avoid…" : "This model takes no negative prompt"} onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
+                <textarea aria-label="Negative prompt" value={negative} placeholder="What to avoid…" onChange={(event) => setNegative(clampText(event.target.value, negativeLimit))} />
               </div>
-              <span>{canUseNegativePrompt ? characterMeta(negative, negativeLimit) : "Unavailable for this model"}</span>
-            </div>
+              <span>{characterMeta(negative, negativeLimit)}</span>
+            </div> : null}
             <StableComposerBar
               hasText={Boolean(prompt || negative)}
               onClearText={() => { setPrompt(""); setNegative(""); setShowNegativePrompt(false); }}

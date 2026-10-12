@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUp, Dices, EyeOff, ChevronUp, CircleDotDashed, History, Images, Layers, MoveHorizontal, MoveVertical, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowUp, Dices, EyeOff, CircleDotDashed, History, Images, Layers, MoveHorizontal, MoveVertical, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { LoraMismatchChip, type LoraMismatch } from './LoraMismatchChip';
 import { cn } from './format';
@@ -18,7 +18,7 @@ import { estimatePhrase, formatAbout, type GenerationEstimate } from './useGener
    Priority (largest kept longest): model > private > aspect > images > steps.
 --------------------------------------------------------------------------- */
 
-type ControlId = "workflow" | "private" | "negative" | "aspect" | "size" | "steps" | "variants" | "lora";
+type ControlId = "workflow" | "private" | "aspect" | "size" | "steps" | "variants" | "lora";
 type Demotion = ControlDensity | "drawer";
 
 const LADDER: Array<[ControlId, Demotion]> = [
@@ -26,7 +26,6 @@ const LADDER: Array<[ControlId, Demotion]> = [
   ["steps", "compact"],
   ["variants", "compact"],
   ["size", "compact"],
-  ["negative", "compact"],
   ["aspect", "compact"],
   ["steps", "mini"],
   ["variants", "mini"],
@@ -49,7 +48,7 @@ type Plan = Record<ControlId, { density: ControlDensity; drawer: boolean }>;
 
 function planForLevel(level: number): Plan {
   const plan = {} as Plan;
-  (["workflow", "private", "negative", "aspect", "size", "steps", "variants", "lora"] as ControlId[])
+  (["workflow", "private", "aspect", "size", "steps", "variants", "lora"] as ControlId[])
     .forEach((id) => { plan[id] = { density: "full", drawer: false }; });
   for (let index = 0; index < Math.min(level, LADDER.length); index += 1) {
     const [id, to] = LADDER[index];
@@ -277,7 +276,7 @@ export function ComposerBar(props: ComposerBarProps) {
     customSize, aspectLocked = false, width, widthMeta, setWidth, height, heightMeta, setHeight,
     steps, stepsMeta, setSteps, count, countMeta, setCount, loraActiveCount,
     hiddenSpace, onOpenLoras,
-    showNegativePrompt, setShowNegativePrompt, canUseNegativePrompt,
+    canUseNegativePrompt,
     runningCount, generateDisabled, generateDisabledReason, generate, refreshComfyStatus, comfyRetrying,
     referenceInputs = [], referenceInpaint = null, loraMismatch = null, onDismissLoraMismatch, referenceAssets = [], onReferenceSelect, onReferenceRemove, onReferenceDeleteRequest, onReferenceError,
     pinnedSeed = "", onRandomSeed, generationEstimate = null, generateKey = "", onToggleHistory, historyOpen = false, hasText = false, onClearText
@@ -389,19 +388,6 @@ export function ComposerBar(props: ComposerBarProps) {
               </button>
             </Tip>
           ) : null}
-          <Tip content={!canUseNegativePrompt ? "This model doesn’t use a negative prompt" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}>
-            <button
-              data-open-trigger
-              type="button"
-              className={cn("negative-toggle", showNegativePrompt && "active", !canUseNegativePrompt && "is-unavailable", plan.negative.density !== "full" && `is-density-${plan.negative.density}`)}
-              aria-label={!canUseNegativePrompt ? "Negative prompt unavailable for this model" : showNegativePrompt ? "Hide negative prompt" : "Show negative prompt"}
-              aria-disabled={!canUseNegativePrompt || undefined}
-              onClick={() => { if (canUseNegativePrompt) setShowNegativePrompt((value: boolean) => !value); }}
-            >
-              <ChevronUp size={13} className={cn(!showNegativePrompt && "flip")} />
-              {plan.negative.density === "full" ? "Negative" : null}
-            </button>
-          </Tip>
           {onToggleHistory ? (
             // Styled as the Negative toggle at its icon-only size: one family of composer controls.
             <Tip content="Recent prompts (↑ in an empty prompt)">

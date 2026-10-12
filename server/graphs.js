@@ -99,10 +99,9 @@ function setMappedInput(graph, mapping, value) {
 async function applyMappedInputs(graph, workflow, body) {
   const controls = workflow.controls || {};
   const defaults = workflow.defaults || {};
-  if (workflow.family === "minimax-h3") {
-    const lengths = [124, 192, 243, 362];
+  if (String(workflow.family || "").replaceAll("-", "_") === "minimax_h3") {
     const requested = Number(body.frames || defaults.frames || 124);
-    body.frames = lengths.reduce((best, value) => Math.abs(value - requested) < Math.abs(best - requested) ? value : best);
+    body.frames = Math.max(124, Math.min(362, Math.round((requested - 5) / 17) * 17 + 5));
     body.fps = 24;
   }
   const values = {
@@ -136,7 +135,7 @@ async function applyMappedInputs(graph, workflow, body) {
       mappedReference = true;
     }
   }
-  if (workflow.family === "minimax-h3" && !mappedReference && !body.startImage && !body.startImageId) {
+  if (String(workflow.family || "").replaceAll("-", "_") === "minimax_h3" && !mappedReference && !body.startImage && !body.startImageId) {
     if (workflow.capabilities?.startImageRequired) throw new Error("This H3 reference preset requires an image.");
     delete graph["4"].inputs.first_frame;
     delete graph["33"];

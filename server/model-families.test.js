@@ -20,6 +20,7 @@ const { familyFromHeader } = await import("./family-catalog.js");
 const { encoderKindFromHeader, vaeLayoutFromHeader } = await import("./model-components.js");
 const { inferModels } = await import("./models.js");
 const { familyGraph } = await import("./family-graph.js");
+const { durationOptions } = await import("../src/app/videoDuration.js");
 const { sanitizeGenerateBody } = await import("./validation.js");
 
 /* ------------------------------------------------------------ fixtures */
@@ -314,6 +315,23 @@ test("MiniMax H3 decodes video and audio from the same latent", () => {
   assert.ok(video.audio && video.images);
   assert.equal(byType(graph, "MiniMaxH3ImageToVideo")[0].inputs.length, 56);
   assert.equal(byType(graph, "VAELoader").length, 2);
+});
+
+test("H3 duration choices retain native frame lengths through validation and the video graph", () => {
+  const model = put("diffusion_models", "h3-duration-test.safetensors", headers.h3);
+  const info = objectInfo({ unets: [model], clips: ["qwen3vl_32b_h3.safetensors"], vaeFiles: ["minimax_h3_video_vae.safetensors", "minimax_h3_audio_vae.safetensors"], extra: {
+    MiniMaxH3ImageToVideo: list({ length: ["INT", { default: 124, min: 5, max: 3600, step: 17 }] })
+  } });
+  const profile = inferModels(info).profiles[0];
+  const choices = durationOptions(profile, 124, 24);
+  assert.deepEqual(choices.map((choice) => Number(choice.value)), [124, 192, 243, 362]);
+  for (const choice of choices) {
+    const body = sanitizeGenerateBody({ kind: "video", workflow: profile.workflow, profileId: profile.id, prompt: "waves", frames: Number(choice.value), fps: 24 }, info);
+    assert.equal(body.frames, Number(choice.value));
+    const graph = familyGraph(body);
+    assert.equal(byType(graph, "MiniMaxH3ImageToVideo")[0].inputs.length, Number(choice.value));
+    assert.equal(byType(graph, "CreateVideo")[0].inputs.fps, 24);
+  }
 });
 
 test("MiniMax H3 prefers a projected 4B encoder only with its learned projection installed", () => {

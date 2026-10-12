@@ -1,3 +1,5 @@
+import { VideoDurationControls } from './VideoDurationControls';
+import { modelName } from './catalogueNames';
 import { ChevronRight, GalleryHorizontalEnd, RotateCcw, Wand2, X } from 'lucide-react';
 import { fallbackSamplers, fallbackSchedulers } from './constants';
 import { cn } from './format';
@@ -12,12 +14,6 @@ import type { WorkflowSummary } from './types';
 import { SafeImg } from './SafeImg';
 import { referenceName } from './ReferenceMediaPicker';
 import { PhoneSelect, PhoneSlider } from './phoneControls';
-
-const h3Durations = [{ label: "5 Seconds", value: "124" }, { label: "8 Seconds", value: "192" }, { label: "10 Seconds", value: "243" }, { label: "15 Seconds", value: "362" }];
-
-function H3Duration({ frames, setFrames }: { frames: number; setFrames: (value: number) => void }) {
-  return <Field label="Duration"><Select value={String(frames)} options={h3Durations} onChange={(value: string) => setFrames(Number(value))} /><small>24 FPS; native frame lengths</small></Field>;
-}
 
 function WorkflowPreviewCard({ workflow, onOpen }: { workflow: WorkflowSummary | null; onOpen: () => void }) {
   const comfyRestarting = useComfyRestarting();
@@ -40,9 +36,9 @@ function WorkflowPreviewCard({ workflow, onOpen }: { workflow: WorkflowSummary |
           <SafeImg src={workflow.thumbnail} fallback={<Wand2 size={18} />} />
         </div>
         <div className="workflow-card-info">
-          <strong>{workflow.name}</strong>
+          <strong>{modelName({ label: workflow.name }).name}</strong>
           {status.state === "ready"
-            ? <span>{workflow.family || (workflow.source === "builtin" ? "Built in" : "Imported")}</span>
+            ? <span>{modelName({ label: workflow.name, family: workflow.family }).detail || (workflow.source === "builtin" ? "Built In" : "Imported")}</span>
             : <span className={cn("wf-status", `is-${status.state}`)}><i aria-hidden="true" />{status.label}</span>}
         </div>
         <ChevronRight size={15} className="workflow-card-arrow" />
@@ -53,7 +49,7 @@ function WorkflowPreviewCard({ workflow, onOpen }: { workflow: WorkflowSummary |
 
 export type SidebarTab = "basics" | "loras" | "advanced";
 
-/** What LoRAs the current workflow can take, shared by the sidebar and the phone's Advanced sheet. */
+/** What LoRAs the current workflow can take, shared by both composers. */
 function loraSetup(view: any) {
   const { currentProfile, mode, models, profileOptions } = view;
   // Always file names; tolerate {name} entries so an odd server can't crash the picker.
@@ -79,13 +75,12 @@ function loraSetup(view: any) {
 export function PhoneAdvancedControls({ view }: { view: any }) {
   const {
     canUseStartImage, cfg, cfgMeta, currentProfile, customSize, aspectLocked, denoise, denoiseMeta,
-    fps, fpsMeta, frameMeta, frames, height, heightMeta, loras, mode, models, profileOptions, sampler, scheduler, seed,
-    setCfg, setDenoise, setFps, setFrames, setHeight, setLoras, setSampler, setScheduler, setSeed, setTextEncoder, setVae,
+    height, heightMeta, loras, mode, models, profileOptions, sampler, scheduler, seed,
+    setCfg, setDenoise, setHeight, setLoras, setSampler, setScheduler, setSeed, setTextEncoder, setVae,
     setWeightDtype, setWidth, textEncoder, vae, weightDtype, width, widthMeta, loraLibrary, rememberedLoraStrength,
     textEncoders, setTextEncoders, refreshModels, refreshWorkflows, showToast,
     inpaintActive, inpaintStrength, setInpaintStrength, inpaintFeather, setInpaintFeather
   } = view;
-  const { loraOptions, loraLimit, loraUnavailable } = loraSetup(view);
   const samplers = profileOptions.samplers?.length ? profileOptions.samplers : models?.samplers?.length ? models.samplers : fallbackSamplers;
   const schedulers = profileOptions.schedulers?.length ? profileOptions.schedulers : models?.schedulers?.length ? models.schedulers : fallbackSchedulers;
   const sizeStep = widthMeta.step || (mode === "video" ? 32 : 64);
@@ -96,20 +91,6 @@ export function PhoneAdvancedControls({ view }: { view: any }) {
   return (
     <div className="phone-advanced-controls">
       {currentProfile ? <ModelSetup key={currentProfile.id} profile={currentProfile} showToast={showToast} onInstalled={() => { refreshModels(false); refreshWorkflows(); }} /> : null}
-
-      <h3 className="phone-section">LoRAs</h3>
-      <div className="phone-loras">
-        <LoraPanel
-          loras={loras}
-          setLoras={setLoras}
-          options={loraOptions}
-          profile={currentProfile}
-          limit={loraLimit}
-          library={loraLibrary}
-          rememberedStrength={rememberedLoraStrength}
-          unavailableReason={loraUnavailable}
-        />
-      </div>
 
       <h3 className="phone-section">Sampling</h3>
       <div className="phone-group">
@@ -143,16 +124,6 @@ export function PhoneAdvancedControls({ view }: { view: any }) {
         </>
       ) : aspectLocked ? <p className="phone-note">The size follows the reference image ({width}×{height}).</p> : null}
 
-      {mode === "video" ? (
-        <>
-          <h3 className="phone-section">Video</h3>
-          {currentProfile?.family === "minimax-h3" ? <H3Duration frames={frames} setFrames={setFrames} /> : <>
-          <PhoneSlider label="Frames" value={frames} min={frameMeta.min || 1} max={Math.min(frameMeta.max ?? 240, 240)} step={frameMeta.step || 4} onChange={setFrames} />
-          <PhoneSlider label="Frames per second" value={fps} min={fpsMeta.min || 1} max={Math.min(fpsMeta.max ?? 60, 60)} step={fpsMeta.step || 1} onChange={setFps} />
-          </>}
-        </>
-      ) : null}
-
       {parts ? (
         <>
           <h3 className="phone-section">Model parts</h3>
@@ -173,12 +144,17 @@ export function PhoneAdvancedControls({ view }: { view: any }) {
   );
 }
 
+export function ModelLoraControls({ view }: { view: any }) {
+  const { loraOptions, loraLimit, loraUnavailable } = loraSetup(view);
+  return <section className="model-loras" aria-label="LoRAs"><h3>LoRAs</h3><LoraPanel loras={view.loras} setLoras={view.setLoras} options={loraOptions} profile={view.currentProfile} limit={loraLimit} library={view.loraLibrary} rememberedStrength={view.rememberedLoraStrength} unavailableReason={loraUnavailable} /></section>;
+}
+
 export function SidebarControls({ view }: { view: any }) {
   const {
     canUseStartImage, cfg, cfgMeta, changeMode, count, countMeta, currentProfile, currentWorkflow,
-    customSize, aspectLocked, denoise, denoiseMeta, fps, fpsMeta, frameMeta, frames, height, heightMeta, loras,
+    customSize, aspectLocked, denoise, denoiseMeta, height, heightMeta, loras,
     loraActiveCount, mode, models, profileOptions, sampler, scheduler, seed,
-    setCfg, setCount, setDenoise, setFps, setFrames, setHeight, setLoras, setSampler,
+    setCfg, setCount, setDenoise, setHeight, setLoras, setSampler,
     setScheduler, setSeed, setSteps, setTextEncoder, setVae,
     setWeightDtype, setWidth, steps, stepsMeta, textEncoder, vae, weightDtype,
     width, widthMeta, setWorkflowGalleryOpen, loraLibrary, rememberedLoraStrength,
@@ -187,7 +163,6 @@ export function SidebarControls({ view }: { view: any }) {
     inpaintActive, inpaintStrength, setInpaintStrength, inpaintFeather, setInpaintFeather
   } = view as Record<string, any> & { sidebarTab: SidebarTab; setSidebarTab: (tab: SidebarTab) => void; recommended?: { differs: boolean; restore: () => void; family: string } };
 
-  const { loraOptions, loraLimit, loraUnavailable } = loraSetup(view);
   // What the model's makers ship, one tap away once anything has moved from it.
   const backToRecommended = recommended?.differs ? (
     <button type="button" className="btn is-ghost sidebar-recommended" onClick={recommended.restore} title={`The steps, prompt strength, sampler and scheduler recommended for ${recommended.family || "this model"}`}>
@@ -202,7 +177,10 @@ export function SidebarControls({ view }: { view: any }) {
         <Tip content="Video generation (beta)"><button type="button" role="tab" aria-selected={mode === "video"} className={cn(mode === "video" && "active")} onClick={() => changeMode("video")}>Video<BetaTag /></button></Tip>
       </div>
 
+      <div className="sidebar-scroll">
       <WorkflowPreviewCard workflow={currentWorkflow} onOpen={() => setWorkflowGalleryOpen(true)} />
+      <ModelLoraControls view={view} />
+      <VideoDurationControls view={view} />
 
       {modelFolders ? <ModelFoldersNotice folders={modelFolders} /> : null}
 
@@ -212,16 +190,15 @@ export function SidebarControls({ view }: { view: any }) {
       ) : null}
 
       <div className="sidebar-subtabs" role="tablist" aria-label="Sidebar sections">
-        {(["basics", "loras", "advanced"] as SidebarTab[]).map((id) => (
+        {(["basics", "advanced"] as SidebarTab[]).map((id) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} className={cn("sidebar-subtab", tab === id && "active")} onClick={() => setTab(id)}>
-            <span>{id === "basics" ? "Basics" : id === "advanced" ? "Advanced" : "LoRAs"}</span>
-            {id === "loras" && loraActiveCount > 0 ? <span className="sidebar-subtab-count">{loraActiveCount}</span> : null}
+            <span>{id === "basics" ? "Basics" : "Advanced"}</span>
           </button>
         ))}
       </div>
 
       <div className="sidebar-body">
-        {tab === "basics" ? (
+        {tab !== "advanced" ? (
           <>
             {sidebarReference ? (
               <section className="sidebar-reference" aria-label={sidebarReference.label}>
@@ -254,14 +231,6 @@ export function SidebarControls({ view }: { view: any }) {
                   </>
                 ) : null}
               </section>
-            ) : null}
-            {mode === "video" ? (
-              <div className="number-row">
-                {currentProfile?.family === "minimax-h3" ? <H3Duration frames={frames} setFrames={setFrames} /> : <>
-                <NumberPicker label="Frames" value={frames} onChange={setFrames} min={frameMeta.min || 1} max={frameMeta.max ?? 240} step={frameMeta.step || 4} fill />
-                <NumberPicker label="FPS" value={fps} onChange={setFps} min={fpsMeta.min || 1} max={fpsMeta.max ?? 60} step={fpsMeta.step || 1} fill />
-                </>}
-              </div>
             ) : null}
             <div className="number-row">
               <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill />
@@ -327,19 +296,7 @@ export function SidebarControls({ view }: { view: any }) {
             {backToRecommended}
           </>
         ) : null}
-
-        {tab === "loras" ? (
-          <LoraPanel
-            loras={loras}
-            setLoras={setLoras}
-            options={loraOptions}
-            profile={currentProfile}
-            limit={loraLimit}
-            library={loraLibrary}
-            rememberedStrength={rememberedLoraStrength}
-            unavailableReason={loraUnavailable}
-          />
-        ) : null}
+      </div>
       </div>
     </>
   );

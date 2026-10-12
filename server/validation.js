@@ -225,8 +225,9 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
   const widthRange = nodeRange(info, latentNode, "width", { default: kind === "video" ? 512 : 1024, min: 16, max: 16384 });
   const heightRange = nodeRange(info, latentNode, "height", { default: kind === "video" ? 288 : 1024, min: 16, max: 16384 });
   const countRange = nodeRange(info, latentNode, "batch_size", { default: 1, min: 1, max: 8 });
-  const frameRange = nodeRange(info, latentNode, "length", { default: 33, min: 1, max: 16384 });
-  const fpsRange = nodeRange(info, "CreateVideo", "fps", { default: 16, min: 1, max: 120 });
+  // Imported workflows can bind these controls to different nodes or fix their frame rate.
+  const frameRange = customWorkflow ? profile.constraints.frames : nodeRange(info, latentNode, "length", { default: 33, min: 1, max: 16384 });
+  const fpsRange = customWorkflow ? { default: profile.defaults.fps || 16, ...profile.constraints.fps } : nodeRange(info, "CreateVideo", "fps", { default: 16, min: 1, max: 120 });
   const stepsRange = nodeRange(info, "KSampler", "steps", { default: kind === "video" ? 12 : 8, min: 1, max: 10000 });
   const cfgRange = nodeRange(info, "KSampler", "cfg", { default: kind === "video" ? 5 : 1, min: 0, max: 100 });
   const denoiseRange = nodeRange(info, "KSampler", "denoise", { default: 1, min: 0, max: 1 });

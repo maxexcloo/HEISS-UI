@@ -1,3 +1,4 @@
+import { modelName } from './catalogueNames';
 import React, { lazy, Suspense, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { VideoPreview } from './VideoPreview';
 import { mediaUrl } from './mediaUrl';
@@ -453,7 +454,7 @@ const menuSearchFrom = 9;
 const menuRecentLimit = 4;
 
 function profileText(profile: Profile) {
-  return `${profile.displayName || ""} ${profile.label || ""} ${profile.description || ""} ${familyLabel(profile)}`.toLowerCase();
+  return `${profile.displayName || ""} ${profile.label || ""} ${profile.description || ""} ${familyLabel(profile)} ${profile.model || ""}`.toLowerCase();
 }
 
 /** The model file's size, quietly, and whether it fits the memory ComfyUI has (never a warning). */
@@ -525,8 +526,8 @@ export function ModelPicker({ value, profiles, showInpaint = true, onChange, com
     return [
       { id: "favorites", label: "Favorites", rows: starred },
       { id: "recent", label: "Recent", rows: recent },
-      { id: "all", label: starred.length || recent.length ? "All models" : "", rows: models },
-      { id: "workflows", label: "Your workflows", rows: workflows }
+      ...Array.from(new Set(models.map(familyLabel))).sort().map((family) => ({ id: `family:${family}`, label: family, rows: models.filter((profile) => familyLabel(profile) === family) })),
+      { id: "workflows", label: "Your Workflows", rows: workflows }
     ].filter((section) => section.rows.length);
   }, [menu, profiles, query]);
   const flat = React.useMemo(() => sections.flatMap((section) => section.rows), [sections]);
@@ -581,10 +582,10 @@ export function ModelPicker({ value, profiles, showInpaint = true, onChange, com
       <Tip content={selected ? `${selected.displayName || selected.label}${setupNote(selected) ? ` · ${setupNote(selected)}` : ""} · choose a model` : "Choose a model"}><button ref={triggerRef} type="button" data-open-trigger className={cn("model-trigger", setupNote(selected) && "needs-setup")} aria-haspopup="listbox" aria-expanded={open} onClick={() => (open ? close() : setOpen(true))}>
           {setupNote(selected) ? <span className="model-setup-flag" aria-label={setupNote(selected)} /> : null}
           {compact ? (
-            <span className="model-copy"><strong>{selected?.displayName || selected?.label || "No model"}</strong></span>
+            <span className="model-copy"><strong>{modelName(selected).name}</strong></span>
           ) : (
             <span className="model-copy">
-              <strong>{selected?.displayName || selected?.label || "No model"}</strong>
+              <strong>{modelName(selected).name}</strong>
               <em>{selected ? familyLabel(selected) : "No model yet"}</em>
             </span>
           )}
@@ -630,10 +631,10 @@ export function ModelPicker({ value, profiles, showInpaint = true, onChange, com
                             onClick={() => pick(profile.id)}
                           >
                             <span className="model-copy">
-                              <strong>{profile.displayName || profile.label}</strong>
-                              {setupNote(profile) ? <em className="is-setup">{setupNote(profile)}</em> : (
+                              <strong>{modelName(profile).name}</strong>
+                              {setupNote(profile) ? <em className="is-setup">{[modelName(profile).detail, setupNote(profile)].filter(Boolean).join(" · ")}</em> : (
                                 // The family once, under the name, instead of a pill beside a line that said it too.
-                                <em>{profile.description || familyLabel(profile)}{size ? <span className="model-size"> · {size}</span> : null}</em>
+                                <em>{modelName(profile).detail}{size ? <span className="model-size"> · {size}</span> : null}</em>
                               )}
                             </span>
                             <span className="model-tags"><ModelAbilities profile={profile} showInpaint={showInpaint} onHover={(hovering) => setAbilityRow(hovering ? `${section.id}:${profile.id}` : "")} />{badge ? <span className="model-badge">{badge}</span> : null}</span>
