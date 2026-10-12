@@ -167,6 +167,9 @@ test("SFW instances hide restricted models and LoRAs and reject saved Grok reque
       assert.equal(models.modelFiles.some((file) => file.name.startsWith("kroma-")), false);
       assert.deepEqual(models.loras, []);
       assert.ok(models.profiles.every((profile) => !profile.capabilities.lora));
+      assert.deepEqual((await api("/api/loras/info")).body.loras, {});
+      assert.equal((await api("/api/loras/library")).body.found, false);
+      assert.deepEqual((await api("/api/loras/saved-profile")).body.loras, []);
       assert.doesNotMatch(JSON.stringify((await api("/api/workflows")).body), /custom:grok-video|custom:renamed-provider/);
       const count = primary.prompts.length;
       const response = await api("/api/generate", generation(grok));
