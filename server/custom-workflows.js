@@ -5,7 +5,7 @@ import { dataDir } from './gallery-store.js';
 import { root } from './comfy.js';
 import { workflowIds } from './workflow-registry.js';
 import { writeJsonFile } from './json-store.js';
-import { grokEnabled } from './features.js';
+import { grokEnabled, modelFamilyEnabled } from './features.js';
 
 export const bundledWorkflowsDir = path.join(root, "workflows");
 export const userWorkflowsDir = path.join(dataDir, "workflows");
@@ -322,7 +322,7 @@ export function allCustomWorkflowRecords({ dedupe = true } = {}) {
       }
     }
   }
-  const allowed = items.filter((workflow) => grokEnabled || (workflow.family !== "grok" && !Object.values(workflow.graph || {}).some((node) => node.class_type === "GrokMedia")));
+  const allowed = items.filter((workflow) => modelFamilyEnabled(workflow.family, workflow.defaults?.model) && Object.values(workflow.graph || {}).every((node) => modelFamilyEnabled("", node.inputs?.unet_name)) && (grokEnabled || !Object.values(workflow.graph || {}).some((node) => node.class_type === "GrokMedia")));
   if (!dedupe) return allowed;
   // The bundled folder is scanned first, so a hand-authored template wins over
   // an imported copy of the same id.
