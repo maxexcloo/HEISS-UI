@@ -1,10 +1,21 @@
-/** Split a model's readable name from precision and workflow details. */
+/** Keep the model and action on the title, with settings on the second line. */
 export function modelName(profile) {
   const raw = String(profile?.displayName || profile?.label || 'No Model');
   const [lead, ...details] = raw.split(/\s*·\s*/);
   const precision = [];
-  const name = lead.replace(/\[(FP\d+|BF\d+|INT\d+[^\]]*|W\d+A\d+)\]/gi, (_, value) => { precision.push(value); return ''; }).replace(/\s+/g, ' ').trim();
-  return { name: name || lead, detail: [...precision, ...details].join(' · ') || profile?.familyName || profile?.family || '' };
+  let name = lead.replace(/\[(FP\d+|BF\d+|INT\d+[^\]]*|W\d+A\d+)\]/gi, (_, value) => { precision.push(value.replace(/\s+ConvRot/gi, '')); return ''; })
+    .replace(/\[klein\]/gi, 'Klein').replace(/Qwen-Image/g, 'Qwen Image').replace(/\s+/g, ' ').trim();
+  let action = details.find((detail) => /^(Generate|Edit|Reference|Non-Reference|Animate Image)$/i.test(detail));
+  if (action === 'Reference') action = profile?.kind === 'video' ? 'Animate Image' : 'Edit';
+  if (action === 'Non-Reference') action = 'Generate';
+  if (/\s+KV\b/.test(name)) {
+    name = name.replace(/\s+KV\b/, '');
+    precision.push('KV Cache');
+  }
+  const settings = details.filter((detail) => !/^(Generate|Edit|Reference|Non-Reference|Animate Image|Standard|Default|Distilled)$/i.test(detail))
+    .flatMap((detail) => detail.replace(/\s*\(≈([\d.]+)\s*s\)/g, ' · ~$1 s').split(' · '));
+  if (!action && profile?.kind) action = 'Generate';
+  return { name: `${name || lead}${action ? ` · ${action}` : ''}`, detail: [...precision, ...settings].join(' · ') || profile?.familyName || profile?.family || '' };
 }
 
 /** Metadata titles take precedence; the exact file name remains the identity. */

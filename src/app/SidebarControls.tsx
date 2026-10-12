@@ -36,9 +36,9 @@ function WorkflowPreviewCard({ workflow, onOpen }: { workflow: WorkflowSummary |
           <SafeImg src={workflow.thumbnail} fallback={<Wand2 size={18} />} />
         </div>
         <div className="workflow-card-info">
-          <strong>{modelName({ label: workflow.name }).name}</strong>
+          <strong>{modelName({ label: workflow.name, kind: workflow.kind }).name}</strong>
           {status.state === "ready"
-            ? <span>{modelName({ label: workflow.name, family: workflow.family }).detail || (workflow.source === "builtin" ? "Built In" : "Imported")}</span>
+            ? <span>{modelName({ label: workflow.name, kind: workflow.kind, family: workflow.family }).detail || (workflow.source === "builtin" ? "Built In" : "Imported")}</span>
             : <span className={cn("wf-status", `is-${status.state}`)}><i aria-hidden="true" />{status.label}</span>}
         </div>
         <ChevronRight size={15} className="workflow-card-arrow" />
