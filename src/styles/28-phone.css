@@ -35,6 +35,15 @@
   pointer-events: none;
 }
 .phone-bar > * { pointer-events: auto; }
+.phone-shell:has(.phone-generation-mode) { --phone-mode-h: 56px; }
+.phone-generation-mode {
+  position: fixed;
+  top: calc(max(6px, env(safe-area-inset-top)) + 50px);
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 19;
+  background: #1b1b1b;
+}
 .phone-title {
   flex: 1;
   min-width: 0;
@@ -129,7 +138,7 @@
 
 .phone-running {
   position: fixed;
-  top: calc(max(6px, env(safe-area-inset-top)) + 50px);
+  top: calc(max(6px, env(safe-area-inset-top)) + 50px + var(--phone-mode-h, 0px));
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
   z-index: 19;
@@ -157,12 +166,12 @@
   touch-action: pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
   padding:
-    calc(max(6px, env(safe-area-inset-top)) + 56px)
+    calc(max(6px, env(safe-area-inset-top)) + 56px + var(--phone-mode-h, 0px))
     max(6px, env(safe-area-inset-right))
     calc(max(12px, env(safe-area-inset-bottom)) + 96px)
     max(6px, env(safe-area-inset-left));
 }
-.phone-shell:has(.phone-running) .phone-gallery { padding-top: calc(max(6px, env(safe-area-inset-top)) + 110px); }
+.phone-shell:has(.phone-running) .phone-gallery { padding-top: calc(max(6px, env(safe-area-inset-top)) + 110px + var(--phone-mode-h, 0px)); }
 .phone-gallery .empty.stage-empty { min-height: calc(100dvh - 200px); }
 /* The phone bar carries the way back; the lock screen's own button would sit under it. */
 .phone-shell .hidden-lockscreen-back { display: none; }
@@ -691,7 +700,6 @@
 /* ------------------------------------------------------------ Advanced */
 
 .phone-advanced-controls { display: grid; }
-.phone-mode { margin-bottom: 6px; }
 .phone-advanced-controls .phone-section { margin-top: 20px; }
 .phone-advanced-controls .phone-control { margin-bottom: 10px; }
 
