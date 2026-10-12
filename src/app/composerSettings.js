@@ -3,7 +3,7 @@
 const settingKeys = [
   'model', 'textEncoder', 'textEncoders', 'vae', 'clipType', 'weightDtype',
   'width', 'height', 'steps', 'cfg', 'denoise', 'inpaintStrength',
-  'inpaintFeather', 'seed', 'count', 'frames', 'fps', 'sampler', 'scheduler',
+  'inpaintFeather', 'seed', 'count', 'frames', 'fps', 'duration', 'resolution', 'sampler', 'scheduler',
   'loras', 'customSize'
 ];
 

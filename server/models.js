@@ -184,11 +184,14 @@ export function inferModels(info, stats = {}) {
     const countRange = controls.count ? nodeRange(info, workflow.graph?.[controls.count.node]?.class_type, controls.count.input, { default: Number(defaults.count || 1), min: 1, max: 4096, step: 1 }) : {};
     const frameRange = controls.frames ? nodeRange(info, workflow.graph?.[controls.frames.node]?.class_type, controls.frames.input, { default: Number(defaults.frames || 33), min: 1, max: 16384, step: 1 }) : {};
     const fpsRange = controls.fps ? nodeRange(info, workflow.graph?.[controls.fps.node]?.class_type, controls.fps.input, { default: Number(defaults.fps || 16), min: 1, max: 120, step: 1 }) : {};
+    const durationRange = controls.duration ? nodeRange(info, workflow.graph?.[controls.duration.node]?.class_type, controls.duration.input, { default: Number(defaults.duration || 6), min: 1, max: 15, step: 1 }) : {};
+    const resolutions = controls.resolution && Array.isArray(workflow.options?.resolutions) ? workflow.options.resolutions.filter((value) => typeof value === "string" && value) : [];
     if (Number(defaults.width)) widthRange.default = Number(defaults.width);
     if (Number(defaults.height)) heightRange.default = Number(defaults.height);
     if (Number(defaults.count)) countRange.default = Number(defaults.count);
     if (Number(defaults.frames)) frameRange.default = Number(defaults.frames);
     if (Number(defaults.fps)) fpsRange.default = Number(defaults.fps);
+    if (Number(defaults.duration)) durationRange.default = Number(defaults.duration);
     if (String(workflow.family || "").replaceAll("-", "_") === "minimax_h3") {
       Object.assign(frameRange, { default: 124, min: 124, max: 362, step: 17, offset: 5 });
       Object.assign(fpsRange, { default: 24, min: 24, max: 24, step: 1 });
@@ -217,11 +220,13 @@ export function inferModels(info, stats = {}) {
         weightDtype: defaults.weightDtype || "default",
         frames: detectedDefault(frameRange, Number(defaults.frames || 33)),
         fps: detectedDefault(fpsRange, Number(defaults.fps || 16)),
+        duration: detectedDefault(durationRange, Number(defaults.duration || 6)),
+        resolution: resolutions.includes(defaults.resolution) ? defaults.resolution : resolutions[0] || "",
         denoise: Number(defaults.denoise || 1)
       },
       aspects: customAspectSet({ width: detectedDefault(widthRange, Number(defaults.width || 1024)), height: detectedDefault(heightRange, Number(defaults.height || 1024)) }, workflow.aspectRatios, { width: widthRange, height: heightRange }),
-      options: { textEncoders: clips, vaes, clipTypes, weightDtypes, samplers, schedulers },
-      constraints: { prompt: textMeta, negative: textMeta, width: widthRange, height: heightRange, count: countRange, frames: frameRange, fps: fpsRange, ...samplerRange, ...(String(workflow.family || "").replaceAll("-", "_") === "minimax_h3" ? { steps: { default: Number(defaults.steps), min: Number(defaults.steps), max: Number(defaults.steps), step: 1 } } : {}) },
+      options: { textEncoders: clips, vaes, clipTypes, weightDtypes, samplers, schedulers, resolutions },
+      constraints: { prompt: textMeta, negative: textMeta, width: widthRange, height: heightRange, count: countRange, frames: frameRange, fps: fpsRange, duration: durationRange, ...samplerRange, ...(String(workflow.family || "").replaceAll("-", "_") === "minimax_h3" ? { steps: { default: Number(defaults.steps), min: Number(defaults.steps), max: Number(defaults.steps), step: 1 } } : {}) },
       capabilities: workflow.capabilities,
       mediaInputs: workflow.mediaInputs || [],
       aspectPolicy: workflow.aspectPolicy,

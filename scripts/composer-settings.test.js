@@ -2,6 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { canRestoreLoras, composerSettings, modePrompts, modeSettings, reusedNegative } from '../src/app/composerSettings.js';
 
+test('provider duration and resolution are independently saved for image and video modes', () => {
+  const image = composerSettings({ model: 'custom:image2', resolution: '2k', duration: 6 });
+  const video = composerSettings({ model: 'custom:video15', resolution: '1080p', duration: 12 });
+  const saved = JSON.parse(JSON.stringify({ ...image, mode: 'image', modeSettings: { image, video } }));
+  assert.deepEqual(modeSettings(saved), { image, video });
+  assert.equal(modeSettings(saved).image.resolution, '2k');
+  assert.equal(modeSettings(saved).video.resolution, '1080p');
+  assert.equal(modeSettings(saved).video.duration, 12);
+});
+
 test('image and video settings survive saving and reloading independently', () => {
   const image = { model: 'flux', count: 4, width: 768, height: 1024, steps: 25, loras: [{ name: 'portrait', strength: 0.8 }] };
   const video = { model: 'h3', count: 1, frames: 241, fps: 24, steps: 50, loras: [] };

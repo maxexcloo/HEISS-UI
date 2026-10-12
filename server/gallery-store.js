@@ -923,6 +923,8 @@ export function generationSettings(body) {
     workflow: body.workflow || "",
     profileId: body.profileId || "",
     ...(body.variationCount ? { variationCount: Number(body.variationCount) } : {}),
+    ...(body.duration ? { duration: Number(body.duration) } : {}),
+    ...(body.resolution ? { resolution: String(body.resolution) } : {}),
     steps: Number(body.steps || 0),
     cfg: Number(body.cfg || 0),
     sampler: body.sampler || "",
@@ -961,7 +963,7 @@ export function generationSettings(body) {
       if (body.inpaint.referenceId && !body.privateVault && !String(body.inpaint.referenceId).startsWith("vault:")) settings.inpaint.referenceId = body.inpaint.referenceId;
     }
   }
-  if (body.kind === "video") {
+  if (body.kind === "video" && !body.duration) {
     settings.frames = Number(body.frames || 0);
     settings.fps = Number(body.fps || 0);
   }

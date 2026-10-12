@@ -109,6 +109,7 @@ export type Profile = {
     samplers?: string[];
     schedulers?: string[];
     loras?: string[];
+    resolutions?: string[];
   };
   capabilities: Record<string, boolean>;
   mediaInputs?: MediaInput[];

@@ -1,5 +1,5 @@
 import React from 'react';
-import { modelName } from './catalogueNames';
+import { modelGroups, modelName } from './catalogueNames';
 import { GridAutoplayButton } from './GridAutoplayButton';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from 'framer-motion';
@@ -540,7 +540,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
     prompt, setPrompt, promptLimit, clampText, negative, setNegative, negativeLimit, currentProfile, hiddenSpace,
     aspectOptions, aspectPickerValue, aspectLocked, defaultAspectSize, mode, changeMode, count, countMeta, setCount, steps, stepsMeta, setSteps,
     referenceInputs, referenceInpaint, referenceAssets, selectReferenceAsset, removeReferenceAsset, confirmAction, showToast,
-    generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, modelLoraControls, phoneVideoDurationControls, phoneAdvancedControls, generationEstimate,
+    generate, generateDisabled, generateDisabledReason, comfyStatus, retryComfyStatus, comfyRetrying, seed, setSeed, modelLoraControls, grokMediaControls, phoneVideoDurationControls, phoneAdvancedControls, generationEstimate,
     prefs, chooseAutoUpscale, setShowNegativePrompt
   } = view;
   const [sheet, setSheet] = React.useState<'' | 'workflow' | 'aspect' | 'advanced'>('');
@@ -656,6 +656,7 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         </button>
       </div>
       <div className="phone-loras">{modelLoraControls}</div>
+      {grokMediaControls}
       {phoneVideoDurationControls}
       <div className="phone-group">
         {(aspectOptions || []).length && !aspectLocked ? (
@@ -690,11 +691,11 @@ function CreateSheet({ view, open, onClose, canUseNegativePrompt, comfyOffline }
         </div>
       ) : null}
 
-      <div className="phone-control">
+      {currentProfile?.family !== 'grok' ? <div className="phone-control">
         <span className="phone-control-label">Steps <b>{steps}</b></span>
         <input className="phone-slider" type="range" min={stepMin} max={stepMax} step={1} value={steps} aria-label="Steps" onChange={(event) => setSteps(Number(event.target.value))} />
         <span className="phone-control-hint"><span>Faster</span>{stepDefault ? <button type="button" className="phone-step-default" onClick={() => setSteps(stepDefault)} disabled={steps === stepDefault}>Recommended {stepDefault}</button> : null}<span>More detail</span></span>
-      </div>
+      </div> : null}
 
       <button type="button" className="phone-link is-strong" onClick={() => setSheet('advanced')}>
         Advanced Settings <ChevronRight size={16} />
@@ -746,8 +747,7 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
       {!profiles.length ? <p className="phone-empty">{(view.comfyStatus?.connected) ? 'No models yet. Get one on the computer running HEISS UI.' : 'ComfyUI is offline. Models show up when it’s back.'}</p> : null}
       {starred.length ? <><h3 className="phone-section">Favorites</h3><div className="phone-group">{starred.map(row)}</div></> : null}
       {recent.length ? <><h3 className="phone-section">Recent</h3><div className="phone-group">{recent.map(row)}</div></> : null}
-      {Array.from(new Set(rest.filter((profile) => !profile.id.startsWith('custom:')).map(familyLabel))).sort().map((family) => <React.Fragment key={family}><h3 className="phone-section">{family}</h3><div className="phone-group">{rest.filter((profile) => !profile.id.startsWith('custom:') && familyLabel(profile) === family).map(row)}</div></React.Fragment>)}
-      {rest.some((profile) => profile.id.startsWith('custom:')) ? <><h3 className="phone-section">Your Workflows</h3><div className="phone-group">{rest.filter((profile) => profile.id.startsWith('custom:')).map(row)}</div></> : null}
+      {modelGroups(rest).map((group) => <React.Fragment key={group.id}><h3 className="phone-section">{group.label}</h3><div className="phone-group">{group.rows.map(row)}</div></React.Fragment>)}
       {needle && !starred.length && !rest.length ? <p className="phone-empty">Nothing matches “{query.trim()}”.</p> : null}
     </Sheet>
   );
