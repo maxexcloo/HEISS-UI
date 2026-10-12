@@ -724,7 +724,7 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
   const rest = profiles.filter((profile) => !shown.has(profile.id) && matches(profile));
   const row = (profile: Profile) => (
     <div key={profile.id} className="phone-row-wrap">
-      <button type="button" className={cn('phone-row', profile.id === model && 'is-current')} onClick={() => { pickModel(profile.id); onClose(); }}>
+      <button type="button" className={cn('phone-row phone-model-option', profile.id === model && 'is-current')} onClick={() => { pickModel(profile.id); onClose(); }}>
         <span>{modelName(profile).name}<small className={cn(setupNote(profile) && 'is-setup')}>{[modelName(profile).detail, setupNote(profile)].filter(Boolean).join(' · ')}</small></span>
         {profile.id === model ? <Check size={18} className="phone-row-end" /> : null}
       </button>
