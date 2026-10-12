@@ -721,7 +721,7 @@ function WorkflowSheet({ view, open, onClose }: { view: Record<string, any>; ope
   const byId = new Map(profiles.map((profile) => [profile.id, profile]));
   const starred = profiles.filter((profile) => favorites.has(profile.id) && matches(profile));
   const recent = needle ? [] : (modelMenu?.recents || []).filter((id) => !favorites.has(id)).map((id) => byId.get(id)).filter((profile): profile is Profile => Boolean(profile)).slice(0, 4);
-  const shown = new Set([...starred, ...recent].map((profile) => profile.id));
+  const shown = new Set(starred.map((profile) => profile.id));
   const rest = profiles.filter((profile) => !shown.has(profile.id) && matches(profile));
   const row = (profile: Profile) => (
     <div key={profile.id} className="phone-row-wrap">
