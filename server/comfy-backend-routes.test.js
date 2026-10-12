@@ -26,8 +26,8 @@ fs.writeFileSync(path.join(dataDir, "workflows/grok-video.json"), JSON.stringify
 let server;
 let base;
 
-async function start(useVideo = true) {
-  server = fork(path.join(here, "index.js"), [], { cwd: path.join(here, ".."), env: { ...process.env, PORT: "0", HOST: "127.0.0.1", COMFY_URL: primary.url, COMFY_VIDEO_URL: useVideo ? video.url : "", HEISS_DATA_DIR: dataDir, COMFY_OUTPUT_DIR: "", HEISS_NO_BROWSER: "1", HEISS_LAN: "0", npm_lifecycle_event: "" }, stdio: ["ignore", "ignore", "pipe", "ipc"] });
+async function start(useVideo = true, enableGrok = true) {
+  server = fork(path.join(here, "index.js"), [], { cwd: path.join(here, ".."), env: { ...process.env, PORT: "0", HOST: "127.0.0.1", COMFY_URL: primary.url, COMFY_VIDEO_URL: useVideo ? video.url : "", HEISS_ENABLE_GROK: enableGrok ? "1" : "0", HEISS_DATA_DIR: dataDir, COMFY_OUTPUT_DIR: "", HEISS_NO_BROWSER: "1", HEISS_LAN: "0", npm_lifecycle_event: "" }, stdio: ["ignore", "ignore", "pipe", "ipc"] });
   let errors = "";
   server.stderr.on("data", (chunk) => { errors += chunk; });
   const message = await new Promise((resolve, reject) => { server.once("message", resolve); server.once("exit", (code) => reject(new Error(`Server exited ${code}: ${errors}`))); });
@@ -147,4 +147,28 @@ test("an instance without video configuration cannot be redirected by request fi
   assert.equal(video.prompts.length, secondaryCount);
   await api(`/api/jobs/${accepted.body.jobId}/cancel`, {});
   primary.drop(prompt.id);
+});
+
+test("SFW instances hide Grok workflows and reject saved Grok requests on either backend configuration", { timeout: 10000 }, async () => {
+  const grok = (await api("/api/models")).body.profiles.find((profile) => profile.id === "custom:grok-video");
+  assert.ok(grok);
+  fs.writeFileSync(path.join(dataDir, "workflows/renamed-provider.json"), JSON.stringify({ heissUi: { id: "renamed-provider", family: "custom" }, "1": { class_type: "GrokMedia", inputs: { prompt: "" } } }));
+  try {
+    for (const useVideo of [true, false]) {
+      await stop();
+      await start(useVideo, false);
+      const models = (await api("/api/models")).body;
+      assert.equal(models.profiles.some((profile) => profile.family === "grok" || profile.id === "custom:renamed-provider"), false);
+      assert.doesNotMatch(JSON.stringify((await api("/api/workflows")).body), /custom:grok-video|custom:renamed-provider/);
+      const count = primary.prompts.length;
+      const response = await api("/api/generate", generation(grok));
+      assert.equal(response.status, 400);
+      assert.equal(primary.prompts.length, count);
+    }
+  } finally {
+    fs.rmSync(path.join(dataDir, "workflows/renamed-provider.json"));
+    await stop();
+    await start();
+  }
+  assert.ok((await api("/api/models")).body.profiles.some((profile) => profile.id === grok.id));
 });
