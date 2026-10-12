@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loraCompatibility, loraName, modelLoras, modelName } from '../src/app/catalogueNames.js';
+import { loraCompatibility, loraName, modelGroups, modelLoras, modelName } from '../src/app/catalogueNames.js';
+
+test('imported workflows share stock family headings, including aliases and cloud models', () => {
+  const profiles = [
+    { id: 'image:flux', family: 'flux2_klein_9b', familyName: 'Flux.2 Klein 9B', label: 'Stock Flux' },
+    { id: 'custom:flux', family: 'flux2_klein_9b', label: 'Custom Flux' },
+    { id: 'video:h3', family: 'minimax_h3', familyName: 'MiniMax H3', label: 'Stock Video' },
+    { id: 'custom:h3', family: 'minimax-h3', label: 'Custom Video' },
+    { id: 'custom:grok', family: 'grok', label: 'Grok Imagine Image 2.0' },
+    { id: 'custom:unknown', family: 'custom', label: 'Unclassified Workflow' },
+  ];
+  const groups = modelGroups(profiles);
+  assert.deepEqual(groups.map((group) => group.label), ['FLUX.2 Klein 9B', 'Grok Imagine', 'MiniMax H3', 'Other Workflows']);
+  assert.deepEqual(groups.find((group) => group.label === 'FLUX.2 Klein 9B').rows.map((profile) => profile.id), ['custom:flux', 'image:flux']);
+  assert.deepEqual(groups.find((group) => group.label === 'MiniMax H3').rows.map((profile) => profile.id), ['custom:h3', 'video:h3']);
+  assert.equal(groups.flatMap((group) => group.rows).length, profiles.length);
+  assert.deepEqual(profiles.map((profile) => profile.id), ['image:flux', 'custom:flux', 'video:h3', 'custom:h3', 'custom:grok', 'custom:unknown']);
+});
 
 test('model names keep model identity separate from precision and workflow settings', () => {
   assert.deepEqual(modelName({ kind: 'video', label: 'MiniMax H3 [INT8 ConvRot] · Reference · Sol & PDD · 8 Steps · 4B Encoder (≈72 s)' }), { name: 'MiniMax H3 · Animate Image', detail: 'INT8 · Sol & PDD · 8 Steps · 4B Encoder · ~72 s' });
@@ -13,6 +30,9 @@ test('model names keep model identity separate from precision and workflow setti
   assert.deepEqual(modelName({ kind: 'image', family: 'grok', defaults: { steps: 20 }, label: 'Grok Image Edit' }), { name: 'Grok Image · Edit', detail: 'grok' });
   assert.deepEqual(modelName({ kind: 'video', family: 'grok', label: 'Grok Image To Video' }), { name: 'Grok Video · Animate Image', detail: 'grok' });
   assert.deepEqual(modelName({ kind: 'image', defaults: { steps: 28 }, label: 'Krea 2 Center SemiRaw v1 [FP8]' }), { name: 'Krea 2 Center SemiRaw v1 · Generate', detail: 'FP8 · 28 Steps' });
+  assert.deepEqual(modelName({ kind: 'video', family: 'minimax_h3', defaults: { steps: 20 }, label: 'Minimax H3 Singularity Ref2va Pruned V1.3 Int8 · MiniMax H3' }), { name: 'MiniMax H3 Singularity v1.3 · Animate Image', detail: 'INT8 · 20 Steps' });
+  assert.deepEqual(modelName({ kind: 'video', family: 'minimax-h3', label: 'MiniMax H3 [INT8 ConvRot] · Non-Reference · Stock · 20 Steps · 4B Encoder' }), { name: 'MiniMax H3 · Generate', detail: 'INT8 · 20 Steps · 4B Encoder' });
+  assert.deepEqual(modelName({ kind: 'video', family: 'grok', label: 'Grok Imagine Video 1.5 · Generate · 20 Steps · Cloud · 720p' }), { name: 'Grok Imagine Video 1.5 · Generate', detail: 'Cloud · 720p' });
 });
 
 test('LoRA names prefer metadata, preserve useful version information and leave identity untouched', () => {

@@ -1,3 +1,4 @@
+import { GrokMediaControls } from './GrokMediaControls';
 import { VideoDurationControls } from './VideoDurationControls';
 import { modelName } from './catalogueNames';
 import { ChevronRight, GalleryHorizontalEnd, RotateCcw, Wand2, X } from 'lucide-react';
@@ -180,6 +181,7 @@ export function SidebarControls({ view }: { view: any }) {
       <div className="sidebar-scroll">
       <WorkflowPreviewCard workflow={currentWorkflow} onOpen={() => setWorkflowGalleryOpen(true)} />
       <ModelLoraControls view={view} />
+      <GrokMediaControls view={view} />
       <VideoDurationControls view={view} />
 
       {modelFolders ? <ModelFoldersNotice folders={modelFolders} /> : null}
@@ -233,7 +235,7 @@ export function SidebarControls({ view }: { view: any }) {
               </section>
             ) : null}
             <div className="number-row">
-              <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill />
+              {currentProfile?.capabilities.steps !== false ? <NumberPicker label="Steps" value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max ?? 150} step={stepsMeta.step || 1} fill /> : null}
               {mode === "image" ? (
                 <NumberPicker label="Images" value={count} onChange={setCount} min={countMeta.min || 1} max={countMeta.max ?? 8} step={countMeta.step || 1} fill />
               ) : null}

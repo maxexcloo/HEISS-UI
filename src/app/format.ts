@@ -160,6 +160,8 @@ export function generationDetailEntries(item: GalleryItem): GenerationDetailSect
   });
   section(item.type === "video" ? "Video" : "Image", (add) => {
     add("Aspect", `${item.width || "?"}x${item.height || "?"}`);
+    add("Resolution", settings.resolution);
+    if (settings.duration) add("Duration", `${settings.duration} Seconds`);
     if (item.type === "image") {
       const count = Number(settings.count || 0);
       if (count > 1) add("Images", count);

@@ -232,6 +232,9 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
   const cfgRange = nodeRange(info, "KSampler", "cfg", { default: kind === "video" ? 5 : 1, min: 0, max: 100 });
   const denoiseRange = nodeRange(info, "KSampler", "denoise", { default: 1, min: 0, max: 1 });
 
+  const resolutions = profile.options.resolutions || [];
+  const resolution = profile.capabilities.resolution ? String(input.resolution || profile.defaults.resolution || "") : "";
+  if (profile.capabilities.resolution && !resolutions.includes(resolution)) throw new Error("Choose a supported resolution for this model.");
   const loras = sanitizeLoras(input, info, profile, kind, customWorkflow?.loraStack?.max || 8);
   return {
     ...input,
@@ -255,6 +258,8 @@ export function sanitizeGenerateBody(input = {}, info = {}, stats = {}) {
     seed: String(input.seed || ""),
     count: workflowInfo.capabilities?.variations === false ? 1 : snapInteger(input.count, countRange.default, countRange),
     ...(input.variationCount !== undefined ? { variationCount: kind === "image" && workflowInfo.capabilities?.variations !== false ? clampInteger(input.variationCount, 1, 1, 8) : 1 } : {}),
+    duration: profile.capabilities.duration ? snapInteger(input.duration, profile.defaults.duration, profile.constraints.duration) : 0,
+    resolution,
     frames: snapInteger(input.frames, frameRange.default, frameRange),
     fps: snapInteger(input.fps, fpsRange.default, fpsRange),
     startImage: String(input.startImage || ""),

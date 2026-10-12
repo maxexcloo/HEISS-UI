@@ -1,4 +1,4 @@
-import { modelName } from './catalogueNames';
+import { modelFamily, modelGroups, modelName } from './catalogueNames';
 import React, { lazy, Suspense, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { VideoPreview } from './VideoPreview';
 import { mediaUrl } from './mediaUrl';
@@ -424,13 +424,7 @@ export function AspectPicker({ value, options, onChange, currentSize, defaultSiz
 }
 
 export function familyLabel(profile: Profile | null) {
-  if (!profile) return "";
-  if (profile.familyName) return profile.familyName;
-  if (profile.family === "z-image") return "Z image";
-  if (profile.family === "checkpoint") return "Checkpoint";
-  if (profile.family === "wan") return "Wan video";
-  if (profile.family === "custom") return "Workflow";
-  return profile.family;
+  return modelFamily(profile);
 }
 
 /** What an unready model still lacks, in the words the gallery badges use; "" when it can run. */
@@ -466,7 +460,7 @@ function sizeNote(profile: Profile, hardware: ReturnType<typeof useHardware>) {
 /**
  * The model menu. With a handful of models it is a plain list; past that it
  * gets a search field, and it always splits into Favorites (starred), Recent,
- * the rest by family and, last, "Your workflows" (imported graphs), scrolling
+ * the rest by family, including imported graphs, scrolling
  * inside a capped height with "Find models" pinned below. With no model at
  * all it offers "Get a model" instead. Arrow keys move, Enter picks, typing
  * searches.
@@ -518,16 +512,11 @@ export function ModelPicker({ value, profiles, showInpaint = true, onChange, com
     const recent = menu.recents.filter((id) => !favorites.has(id)).map((id) => byId.get(id)).filter((profile): profile is Profile => Boolean(profile)).slice(0, menuRecentLimit);
     const shown = new Set([...starred, ...recent].map((profile) => profile.id));
     // The rest by family, so seven Sana variants sit together instead of scattering.
-    const rest = profiles.filter((profile) => !shown.has(profile.id)).sort((a, b) =>
-      familyLabel(a).localeCompare(familyLabel(b)) || (a.displayName || a.label).localeCompare(b.displayName || b.label));
-    // Imported graphs are workflows, not models: they get their own group at the end.
-    const models = rest.filter((profile) => !profile.id.startsWith("custom:"));
-    const workflows = rest.filter((profile) => profile.id.startsWith("custom:"));
+    const rest = profiles.filter((profile) => !shown.has(profile.id));
     return [
       { id: "favorites", label: "Favorites", rows: starred },
       { id: "recent", label: "Recent", rows: recent },
-      ...Array.from(new Set(models.map(familyLabel))).sort().map((family) => ({ id: `family:${family}`, label: family, rows: models.filter((profile) => familyLabel(profile) === family) })),
-      { id: "workflows", label: "Your Workflows", rows: workflows }
+      ...modelGroups(rest)
     ].filter((section) => section.rows.length);
   }, [menu, profiles, query]);
   const flat = React.useMemo(() => sections.flatMap((section) => section.rows), [sections]);

@@ -316,9 +316,9 @@ export function ComposerBar(props: ComposerBarProps) {
     </>
   ) : null;
 
-  const stepsPicker = (density: ControlDensity) => (
+  const stepsPicker = (density: ControlDensity) => currentProfile?.family !== 'grok' ? (
     <NumberPicker label="Steps" icon={<CircleDotDashed size={14} />} density={density} value={steps} onChange={setSteps} min={stepsMeta.min || 1} max={stepsMeta.max || 150} step={stepsMeta.step || 1} size="sm" />
-  );
+  ) : null;
 
   const variantsPicker = (density: ControlDensity) => showVariants ? (
     <NumberPicker label="Images" icon={<Images size={14} />} density={density} value={count} onChange={setCount} min={countMeta.min || 1} max={countMeta.max ?? 8} step={countMeta.step || 1} size="sm" />

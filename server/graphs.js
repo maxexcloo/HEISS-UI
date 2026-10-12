@@ -122,7 +122,9 @@ async function applyMappedInputs(graph, workflow, body) {
     seed: Number(body.seed || crypto.randomInt(1, 2 ** 31)),
     count: Number(body.count || 1),
     frames: Number(body.frames || 0),
-    fps: Number(body.fps || 0)
+    fps: Number(body.fps || 0),
+    duration: Number(body.duration || 0),
+    resolution: body.resolution || ""
   };
   for (const [key, value] of Object.entries(values)) {
     if (value !== "" && value !== undefined && value !== null) setMappedInput(graph, controls[key], value);

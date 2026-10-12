@@ -27,7 +27,7 @@ export function useViewerControls(view: any) {
   const {
     active, doneGallery, generate, generateDisabled, height, lastTapRef,
     models, prefs, setActive, setCfg, setClipType, setCount, setCustomSize, setDenoise, setFps,
-    setFrames, setHeight, setIsDraggingViewer, setLoras, setMode, setModel, setNegative, setPrompt,
+    setFrames, setDuration, setResolution, setHeight, setIsDraggingViewer, setLoras, setMode, setModel, setNegative, setPrompt,
     setSampler, setScheduler, setSeed, setShowDetails, setShowNegativePrompt, setStartImage, setStartImageId, setStartImageName, setSteps,
     setTextEncoder, setTextEncoders, setVae, setViewerPan, setViewerZoom, setWeightDtype, setWidth,
     setZenSelectedId, showToast, viewerDragEndRef, viewerDragRef, viewerPan,
@@ -63,6 +63,8 @@ export function useViewerControls(view: any) {
       setSteps(before.steps);
       setCfg(before.cfg);
       setCount(before.count);
+      setDuration(before.duration);
+      setResolution(before.resolution);
       setLoras(before.loras);
     }));
   }
@@ -96,6 +98,8 @@ export function useViewerControls(view: any) {
     else setSeed("");
     if (itemSettings.variationCount || itemSettings.count) setCount(Number(itemSettings.variationCount || itemSettings.count));
     if (itemSettings.frames) setFrames(Number(itemSettings.frames));
+    if (itemSettings.duration) setDuration(Number(itemSettings.duration));
+    if (itemSettings.resolution) setResolution(String(itemSettings.resolution));
     if (itemSettings.fps) setFps(Number(itemSettings.fps));
     if (itemSettings.sampler) setSampler(String(itemSettings.sampler));
     if (itemSettings.scheduler) setScheduler(String(itemSettings.scheduler));
