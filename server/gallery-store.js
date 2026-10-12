@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { comfyOutputDir, root } from './comfy.js';
+import { comfyOutputDir, localOutputFile, root } from './comfy.js';
 import { hasLegacyPrompt, openLegacyPrompt } from './privacy.js';
 import { readJsonFile, removeStaleTemporaries, writeJsonFile, writeJsonFileAsync } from './json-store.js';
 import { isInside } from './paths.js';
@@ -918,6 +918,8 @@ export function cleanupGalleryState(jobs) {
 }
 
 export function generationSettings(body) {
+  const providerModel = String(body.modelName || body.model || "");
+  const grok = providerModel.startsWith("grok-imagine-");
   const settings = {
     comfyBackend: body.comfyBackend || "primary",
     workflow: body.workflow || "",
@@ -925,10 +927,12 @@ export function generationSettings(body) {
     ...(body.variationCount ? { variationCount: Number(body.variationCount) } : {}),
     ...(body.duration ? { duration: Number(body.duration) } : {}),
     ...(body.resolution ? { resolution: String(body.resolution) } : {}),
-    steps: Number(body.steps || 0),
-    cfg: Number(body.cfg || 0),
-    sampler: body.sampler || "",
-    scheduler: body.scheduler || "",
+    ...(!grok ? {
+      steps: Number(body.steps || 0),
+      cfg: Number(body.cfg || 0),
+      sampler: body.sampler || "",
+      scheduler: body.scheduler || ""
+    } : {}),
     seed: body.seed || "Random",
     ...(body.seedRandom ? { seedRandom: true } : {}),
     // An imported workflow's model is the workflow; this is the file it loaded.
@@ -970,34 +974,45 @@ export function generationSettings(body) {
   return settings;
 }
 
-export function replaceGalleryJob(id, outputs, body, jobs, status = "done") {
+export async function replaceGalleryJob(id, outputs, body, jobs, status = "done") {
   const title = promptTitle(body.prompt);
   const job = jobs.get(id) || {};
   const durationMs = job.startedAt ? Date.now() - job.startedAt : 0;
   const existing = gallery.filter((item) => item.jobId === id);
-  const completed = outputs.map((item, index) => ({
-    ...item,
-    id: item.url,
-    jobId: id,
-    status,
-    prompt: body.prompt || "",
-    negative: body.negative || "",
-    filename: title || item.filename,
-    createdAt: existing[index]?.createdAt || new Date().toISOString(),
-    durationMs,
-    // How long ComfyUI itself took, without waiting in its queue.
-    ...(job.timing ? { timing: job.timing } : {}),
-    // An inpaint result is the whole original picture, whatever size the crop sampled at.
-    width: Number(body.inpaint?.image?.width || body.width || 0),
-    height: Number(body.inpaint?.image?.height || body.height || 0),
-    model: body.model || "",
-    referenceImage: body.startImageId || "",
-    referenceImageName: body.startImageName || "",
-    startImageId: body.startImageId || "",
-    settings: generationSettings(body),
-    outputName: item.filename,
-    promptId: job.promptId || "",
-    index
+  const completed = await Promise.all(outputs.map(async (item, index) => {
+    let videoSize = null;
+    if (item.type === "video" && typeof item.url === "string" && item.url.startsWith("/comfy/view?")) {
+      const params = new URLSearchParams(item.url.slice(item.url.indexOf("?") + 1));
+      const file = localOutputFile(params.get("filename") || "", params.get("subfolder") || "", params.get("type") || "output");
+      if (file) {
+        const { probeVideo } = await import('./video-previews.js');
+        videoSize = await probeVideo(file);
+      }
+    }
+    return {
+      ...item,
+      id: item.url,
+      jobId: id,
+      status,
+      prompt: body.prompt || "",
+      negative: body.negative || "",
+      filename: title || item.filename,
+      createdAt: existing[index]?.createdAt || new Date().toISOString(),
+      durationMs,
+      // How long ComfyUI itself took, without waiting in its queue.
+      ...(job.timing ? { timing: job.timing } : {}),
+      // An inpaint result is the whole original picture, whatever size the crop sampled at.
+      width: Number(videoSize?.width || body.inpaint?.image?.width || body.width || 0),
+      height: Number(videoSize?.height || body.inpaint?.image?.height || body.height || 0),
+      model: body.model || "",
+      referenceImage: body.startImageId || "",
+      referenceImageName: body.startImageName || "",
+      startImageId: body.startImageId || "",
+      settings: generationSettings(body),
+      outputName: item.filename,
+      promptId: job.promptId || "",
+      index
+    };
   }));
   let nextIndex = 0;
   const replaced = [];

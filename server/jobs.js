@@ -558,7 +558,7 @@ async function runJobOnBackend(id, body, { prepare = null } = {}) {
           const state = missedState(result) || skipped;
           return state ? { ...result.output, upscale: state } : result.output;
         });
-        const completed = replaceGalleryJob(id, withUpscales, body, jobs);
+        const completed = await replaceGalleryJob(id, withUpscales, body, jobs);
         markWorkflowUsed(body.profileId || body.model || body.workflow || "", completed[0]?.url || "");
         setTerminalJob(id, { status: "done", outputs: completed, ...(kept ? { kept } : {}) });
         // A Hidden image used as the reference for a normal run: only its staged copy goes.
@@ -755,7 +755,7 @@ export function runMockJob(id, body) {
       clearInterval(interval);
       updateGalleryJob(id, { progress: { step: steps, maxSteps: steps, nodeName: "VAEDecode" } }, { persist: false });
 
-      setTimeout(() => {
+      setTimeout(async () => {
         if (isCanceled()) {
           if (jobs.get(id)?.status === "canceling") setTerminalJob(id, { status: "canceled" });
           updateGalleryJob(id, { status: "canceled" });
@@ -794,7 +794,7 @@ export function runMockJob(id, body) {
             });
           return;
         }
-        replaceGalleryJob(id, outputs, body, jobs);
+        await replaceGalleryJob(id, outputs, body, jobs);
         markWorkflowUsed(body.profileId || body.model || body.workflow || "", outputs[0]?.url || "");
         setTerminalJob(id, { status: "done", outputs });
       }, 400);
