@@ -274,7 +274,8 @@ export function familyGraph(body) {
   } else if (family.kind === "video") {
     latent = [add(family.latent, { width, height, length: frames, batch_size: 1 }), 0];
   } else if (startImage && family.img2img) {
-    latent = [add("VAEEncode", { pixels: startImage, vae }), 0];
+    const encoded = [add("VAEEncode", { pixels: startImage, vae }), 0];
+    latent = count > 1 ? [add("RepeatLatentBatch", { samples: encoded, amount: count }), 0] : encoded;
     denoise = Number(body.denoise ?? 0.65);
   } else {
     latent = [add(family.latent, { width: latentWidth, height: latentHeight, batch_size: count }), 0];

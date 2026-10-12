@@ -431,7 +431,7 @@ export function familyProfiles(info, helpers) {
         ...(variant.sigmas ? { steps: { default: 8, min: 8, max: 8, step: 1 }, cfg: { default: 1, min: 1, max: 1, step: 1 } } : {})
       },
       capabilities: {
-        negativePrompt: negativeMode === "text" || negativeMode === "qwen21",
+        negativePrompt: !variant.sigmas && (negativeMode === "text" || negativeMode === "qwen21"),
         variations: family.kind === "image" && family.sampling !== "pair",
         textEncoder: encoderSlots.length > 0,
         vae: !family.ownLoaders,

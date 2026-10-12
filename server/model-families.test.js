@@ -375,6 +375,74 @@ test("a staged reference image becomes the start image of a built-in graph", asy
   assert.equal(byType(graph, "KSampler")[0].inputs.denoise, 0.6);
 });
 
+test("Krea and Z-Image edits repeat the encoded reference for every requested variant", async () => {
+  const { imageGraph } = await import("./graphs.js");
+  for (const family of ["krea2", "zimage"]) {
+    for (const count of [1, 4]) {
+      const graph = await imageGraph({ workflow: `family:${family}`, family, variant: "turbo", source: "unet", model: `${family}.safetensors`, encoders: ["te.safetensors"], vae: "vae.safetensors", prompt: "a cat", steps: 8, cfg: 1, seed: 1, count, denoise: 0.6, referenceAssets: [{ slot: "reference", assetId: "a1", comfyName: "staged-ref.png" }] });
+      const sampler = byType(graph, "KSampler")[0];
+      const latent = graph[sampler.inputs.latent_image[0]];
+      const encoded = count > 1 ? graph[latent.inputs.samples[0]] : latent;
+      assert.equal(latent.class_type, count > 1 ? "RepeatLatentBatch" : "VAEEncode");
+      if (count > 1) assert.equal(latent.inputs.amount, count);
+      assert.equal(encoded.class_type, "VAEEncode");
+      assert.equal(graph[encoded.inputs.pixels[0]].inputs.image, "staged-ref.png");
+      assert.equal(sampler.inputs.denoise, 0.6);
+    }
+  }
+});
+
+test("the known Kroma W8A8 model restores its persisted Krea 2 Turbo profile", () => {
+  const name = put("diffusion_models", "kroma-v0.3.1-turbo-opd-W8A8.safetensors", { "quantized_krea_block.weight": t([1, 1]) });
+  const classified = classifyModel("unet", name);
+  assert.deepEqual([classified.family, classified.variant.id], ["krea2", "turbo"]);
+  assert.equal(classifyModel("unet", "kroma-unknown.safetensors").family, "");
+  const id = `image:krea2:${name}`;
+  const file = path.join(process.env.HEISS_DATA_DIR, "per-model-workflows.json");
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify([{ id, model: name, name: "Kroma Saved Profile" }]));
+  try {
+    const profile = inferModels(objectInfo({ unets: [name] })).profiles.find((item) => item.id === id);
+    assert.ok(profile);
+    assert.equal(profile.label, "Kroma Saved Profile");
+    assert.deepEqual([profile.family, profile.variant, profile.defaults.steps], ["krea2", "turbo", 8]);
+  } finally {
+    fs.rmSync(file);
+  }
+});
+
+test("custom Klein generation and reference schedules follow their mapped latent dimensions", async () => {
+  const { customWorkflowGraph } = await import("./graphs.js");
+  const { saveCustomWorkflow } = await import("./custom-workflows.js");
+  for (const references of [[], ["reference.png"]]) {
+    const graph = familyGraph({ family: "flux2_klein_9b", variant: "distilled", source: "unet", model: "flux-2-klein-9b-kv-fp8.safetensors", encoders: ["te.safetensors"], vae: "flux2-vae.safetensors", prompt: "a cat", seed: 42, referenceImages: references });
+    const [latentId] = Object.entries(graph).find(([, node]) => node.class_type === "EmptyFlux2LatentImage");
+    const [schedulerId, scheduler] = Object.entries(graph).find(([, node]) => node.class_type === "Flux2Scheduler");
+    Object.assign(scheduler.inputs, { width: 1024, height: 1024 });
+    const id = `klein-dimensions-${references.length ? "reference" : "generation"}`;
+    saveCustomWorkflow({ graph, heissUi: { id, controls: { width: { node: latentId, input: "width" }, height: { node: latentId, input: "height" } } } });
+    for (const [width, height] of [[864, 1152], [1024, 1024]]) {
+      const mapped = await customWorkflowGraph({ workflow: `custom:${id}`, width, height, seed: 42 });
+      assert.deepEqual([mapped[latentId].inputs.width, mapped[latentId].inputs.height], [width, height]);
+      assert.deepEqual([mapped[schedulerId].inputs.width, mapped[schedulerId].inputs.height], [width, height]);
+    }
+    assert.deepEqual([scheduler.inputs.width, scheduler.inputs.height], [1024, 1024], "the stored template stays unchanged");
+  }
+});
+
+test("Qwen 2.1 Turbo hides negative prompts because its sampler uses only positive conditioning", () => {
+  const names = ["qwen_image_2.1_int8_convrot.safetensors", "qwen_image_2.1_turbo_int8_convrot.safetensors", "qwen_image_2.1_turbo_bf16.safetensors"];
+  const profiles = inferModels(objectInfo({ unets: names, extra: { TextEncodeQwenImage21: node() } })).profiles.filter((profile) => profile.family === "qwen_image_21");
+  assert.equal(profiles.length, 3);
+  for (const profile of profiles) {
+    const turbo = profile.variant === "turbo";
+    assert.equal(profile.capabilities.negativePrompt, !turbo);
+    const graph = familyGraph({ family: profile.family, variant: profile.variant, source: "unet", model: profile.model, encoders: ["te.safetensors"], vae: "vae.safetensors", prompt: "a cat", negative: "blurry", seed: 42 });
+    assert.equal(byType(graph, "BasicGuider").length, turbo ? 1 : 0);
+    assert.equal(byType(graph, "KSampler").length, turbo ? 0 : 1);
+  }
+});
+
 /* ------------------------------------------------------------ Sana */
 
 const sanaNodes = (presets) => ({
